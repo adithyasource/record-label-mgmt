@@ -2,13 +2,14 @@ import tkinter as tk
 from tkinter import messagebox
 import sqlite3
 import itertools
+import customtkinter
 
 
 # app frame
 window = tk.Tk()
 window.title('MIMIC Internal Mgmt')
 window.geometry('1000x450')
-window.resizable(False, False)
+window.resizable(False, True)
 window.iconbitmap('C:\\Users\\getsg\\Documents\\GitHub\\music mgmt\\mimic.ico')
 window.configure(bg='#FFFFFF')
 frame = tk.Frame(window, bg='#FFFFFF')
@@ -160,15 +161,18 @@ topLabel.grid(row=0, column=0, pady=(30,10), sticky = "ew", )
 
 
 
-createRelease = tk.Button(frame, text="create release", font='"Space Grotesk" 13', width=80, anchor='w', bg='#FFFFFF', relief='solid', borderwidth=1, activebackground='#FFFFFF', padx=20, command=lambda: showPage(frame2))
+createRelease = tk.Button(frame, text="create release", font='"Space Grotesk" 13', width=80, anchor='w', bg='#FFFFFF', relief='solid', borderwidth=1, activebackground='#FFFFFF', padx=20, command=lambda: showPage(frame2), cursor='hand2')
 createRelease.grid(row=1, column=0, pady=10, sticky = "ew")
 
 
-previousReleases = tk.Label(frame, bg='#FFFFFF',  borderwidth=1, relief='solid')
+
+
+
+
+previousReleases = tk.Frame(frame, bg='#FFFFFF',  borderwidth=1, relief='solid', width=100)
 
 previousReleasesText = tk.Label(previousReleases, text='previous releases', font='"Space Grotesk" 13', anchor='w', padx=20, bg='#FFFFFF', foreground='#B0B0B0', pady=5)
 previousReleasesText.grid(row=0,column=0, sticky = "ew")  
-
 
 
 conn = sqlite3.connect('data.db')
@@ -185,11 +189,21 @@ for i in range(numberOfEntries):
 conn.commit()
 conn.close()
 
-
 previousReleases.grid(row=2,column=0, sticky = "ew", pady=10)
 
 
-viewAnalytics = tk.Button(frame, text="view analytics", font='"Space Grotesk" 13', anchor='w', bg='#FFFFFF', relief='solid', borderwidth=1, activebackground='#FFFFFF', padx=20)
+
+
+
+
+
+
+
+
+
+
+
+viewAnalytics = tk.Button(frame, text="view analytics", font='"Space Grotesk" 13', anchor='w', bg='#FFFFFF', relief='solid', borderwidth=1, activebackground='#FFFFFF', padx=20, cursor='hand2')
 viewAnalytics.grid(row=3, column=0, pady=10, sticky = "swe")
 
 
@@ -197,7 +211,7 @@ viewAnalytics.grid(row=3, column=0, pady=10, sticky = "swe")
 # PAGE 2
 
 
-backButton = tk.Button(frame2, text="< back", font='"Space Grotesk" 13', width=100, anchor='w', bg='#FFFFFF', relief='flat', activebackground='#FFFFFF', borderwidth=0, command=lambda: showPage(frame) )
+backButton = tk.Button(frame2, text="< back", font='"Space Grotesk" 13', width=100, anchor='w', bg='#FFFFFF', relief='flat', activebackground='#FFFFFF', borderwidth=0, command=lambda: showPage(frame), cursor='hand2' )
 backButton.grid(row=0, column=0, pady=30)
 
 splitGrid = tk.Label(frame2, bg='#FFFFFF',  borderwidth=0, relief='flat')
@@ -212,42 +226,44 @@ songTitle.insert(0, "song title")
 tags = tk.Label(splitGrid, bg='#FFFFFF',  borderwidth=0, relief='flat', justify='left')
 
 #first row
+
+
+
 popVar = tk.StringVar()
-popTag = tk.Checkbutton(tags, text='pop', font='"Space Grotesk" 10', bg='#FFFFFF', activebackground='#FFFFFF', variable=popVar, onvalue='pop', offvalue='NULL')
+popTag = customtkinter.CTkCheckBox(tags, text="pop", font=customtkinter.CTkFont(family='Space Grotesk', size=13), border_width=1, corner_radius=0, checkbox_height=20, checkbox_width=20, variable=popVar, onvalue='pop', offvalue='NULL', hover=False, fg_color='#000000')
 popTag.deselect()
 popTag.grid(row=0, column=0, sticky='w')
 
 hiphopVar = tk.StringVar()
-hiphopTag = tk.Checkbutton(tags, text='hip hop', font='"Space Grotesk" 10', bg='#FFFFFF', activebackground='#FFFFFF', variable=hiphopVar, onvalue='hiphop', offvalue='NULL')
+hiphopTag = customtkinter.CTkCheckBox(tags, text="hip hop", font=customtkinter.CTkFont(family='Space Grotesk', size=13), border_width=1, corner_radius=0, checkbox_height=20, checkbox_width=20, variable=hiphopVar, onvalue='hiphop', offvalue='NULL', hover=False, fg_color='#000000')
 hiphopTag.deselect()
 hiphopTag.grid(row=0, column=1 , sticky='w')
 
 indieVar = tk.StringVar()
-indieTag = tk.Checkbutton(tags, text='indie', font='"Space Grotesk" 10', bg='#FFFFFF', activebackground='#FFFFFF', variable=indieVar, onvalue='indie', offvalue='NULL')
+indieTag = customtkinter.CTkCheckBox(tags, text="indie", font=customtkinter.CTkFont(family='Space Grotesk', size=13), border_width=1, corner_radius=0, checkbox_height=20, checkbox_width=20, variable=indieVar, onvalue='indie', offvalue='NULL', hover=False, fg_color='#000000')
 indieTag.deselect()
 indieTag.grid(row=0, column=2 , sticky='w')
 
 kpopVar = tk.StringVar()
-kpopTag = tk.Checkbutton(tags, text='kpop', font='"Space Grotesk" 10', bg='#FFFFFF', activebackground='#FFFFFF', variable=kpopVar, onvalue='kpop', offvalue='NULL')
+kpopTag = customtkinter.CTkCheckBox(tags, text="kpop", font=customtkinter.CTkFont(family='Space Grotesk', size=13), border_width=1, corner_radius=0, checkbox_height=20, checkbox_width=20, variable=kpopVar, onvalue='kpop', offvalue='NULL', hover=False, fg_color='#000000')
 kpopTag.deselect()
 kpopTag.grid(row=0, column=3 , sticky='w')
 
 #second row
 explicitVar = tk.StringVar()
-explicitTag = tk.Checkbutton(tags, text='explicit', font='"Space Grotesk" 10', bg='#FFFFFF', activebackground='#FFFFFF', variable=explicitVar, onvalue='explicit', offvalue='NULL')
+explicitTag = customtkinter.CTkCheckBox(tags, text="explicit", font=customtkinter.CTkFont(family='Space Grotesk', size=13), border_width=1, corner_radius=0, checkbox_height=20, checkbox_width=20, variable=explicitVar, onvalue='explicit', offvalue='NULL', hover=False, fg_color='#000000')
 explicitTag.deselect()
 explicitTag.grid(row=1, column=0, sticky='w')
 
 inhouseVar = tk.StringVar()
-inhouseTag = tk.Checkbutton(tags, text='inhouse label', font='"Space Grotesk" 10', bg='#FFFFFF', activebackground='#FFFFFF', variable=inhouseVar, onvalue='inhouse', offvalue='NULL')
+inhouseTag = customtkinter.CTkCheckBox(tags, text="inhouse", font=customtkinter.CTkFont(family='Space Grotesk', size=13), border_width=1, corner_radius=0, checkbox_height=20, checkbox_width=20, variable=inhouseVar, onvalue='inhouse', offvalue='NULL', hover=False, fg_color='#000000')
 inhouseTag.deselect()
 inhouseTag.grid(row=1, column=1, sticky='w')
 
 lofiVar = tk.StringVar()
-lofiTag = tk.Checkbutton(tags, text='lofi', font='"Space Grotesk" 10', bg='#FFFFFF', activebackground='#FFFFFF', variable=lofiVar, onvalue='lofi', offvalue='NULL')
+lofiTag = customtkinter.CTkCheckBox(tags, text="lofi", font=customtkinter.CTkFont(family='Space Grotesk', size=13), border_width=1, corner_radius=0, checkbox_height=20, checkbox_width=20, variable=lofiVar, onvalue='lofi', offvalue='NULL', hover=False, fg_color='#000000')
 lofiTag.deselect()
 lofiTag.grid(row=1, column=2, sticky='w')
-
 
 tags.grid(row=2, column=0, sticky='w', pady=(15,0))
 
@@ -272,7 +288,7 @@ prodBy.grid(row=5,column=1, sticky = "nsew", pady=(15,0))
 prodBy.insert(0, "produced by")
 
 
-saveRelease = tk.Button(splitGrid, font='"Space Grotesk" 13', bg='#FFFFFF', text='save release', relief='flat', activebackground='#FFFFFF', command=lambda: [doShit(frame)], borderwidth=0)
+saveRelease = tk.Button(splitGrid, font='"Space Grotesk" 13', bg='#FFFFFF', text='save release', relief='flat', activebackground='#FFFFFF', command=lambda: [doShit(frame)], borderwidth=0, cursor='hand2')
 saveRelease.grid(row= 6, column=1, pady=(30,0), sticky='e')
 
 splitGrid.grid(row=1, column=0, sticky='ew')
