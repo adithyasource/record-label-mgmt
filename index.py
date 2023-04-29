@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox
 import sqlite3
+import itertools
+
 
 # app frame
 window = tk.Tk()
@@ -75,13 +77,27 @@ def doShit(frame):
         '''
         conn.execute(tableCreateQuery)
 
+        # if popVarValue == "NULL":
+        #     popVarValue = None
+        # if hiphopVarValue == "NULL":
+        #     hiphopVarValue = None
+        # if indieVarValue == "NULL":
+        #     indieVarValue = None
+        # if kpopVarValue == "NULL":
+        #     kpopVarValue = None
+        # if explicitVarValue == "NULL":
+        #     explicitVarValue = None
+        # if inhouseVarValue == "NULL":
+        #     inhouseVarValue = None
+        # if lofiVarValue == "NULL":
+        #     lofiVarValue = None
 
         dataInsertQuery = '''
             INSERT INTO releaseData VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')
-        '''.format(songTitleValue, releaseDateSQLVersion, performedByValue, writtenByValue, prodByValue, popVarValue, hiphopVarValue, indieVarValue, kpopVarValue, explicitVarValue, inhouseVarValue, lofiVarValue)
+        '''.format(songTitleValue, releaseDateValue, performedByValue, writtenByValue, prodByValue, popVarValue, hiphopVarValue, indieVarValue, kpopVarValue, explicitVarValue, inhouseVarValue, lofiVarValue)
       
         cursor = conn.cursor()
-        cursor.execute(dataInsertQuery, {':null':None})
+        cursor.execute(dataInsertQuery)
         conn.commit()
         conn.close()
 
@@ -147,14 +163,42 @@ previousReleases = tk.Label(frame, bg='#FFFFFF',  borderwidth=1, relief='solid')
 previousReleasesText = tk.Label(previousReleases, text='previous releases', font='"Space Grotesk" 13', anchor='w', padx=20, bg='#FFFFFF', foreground='#B0B0B0', pady=5)
 previousReleasesText.grid(row=0,column=0, sticky = "ew")  
 
-entry1 = tk.Label(previousReleases, text='', font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=20, pady=5)
+
+
+conn = sqlite3.connect('data.db')
+cursor = conn.cursor()
+cursor.execute("SELECT songTitle from releaseData")
+
+fetchAllEntries = cursor.fetchmany()
+
+numberOfEntries = len(fetchAllEntries)
+
+
+for i in range(numberOfEntries):
+    globals()[f'fetchEntry{i}'] = fetchAllEntries[0]
+    globals()[f'fetchEntry{i}'] = str(globals()[f'fetchEntry{i}'])[2:-3]
+
+
+
+
+
+
+conn.commit()
+conn.close()
+
+
+
+
+
+entry1 = tk.Label(previousReleases, text=fetchEntry0, font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=20, pady=5)
 entry1.grid(row=1,column=0, sticky = "ew")  
-entry2 = tk.Label(previousReleases, text='', font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=20, pady=5)
+
+entry2 = tk.Label(previousReleases, text=fetchEntry1, font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=20, pady=5)
 entry2.grid(row=2,column=0, sticky = "ew")
-entry3 = tk.Label(previousReleases, text='', font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=20, pady=5)
-entry3.grid(row=3,column=0, sticky = "ew")
-entry4 = tk.Label(previousReleases, text='', font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=20, pady=5)
-entry4.grid(row=4,column=0, sticky = "ew")
+# entry3 = tk.Label(previousReleases, text=fetchEntry3, font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=20, pady=5)
+# entry3.grid(row=3,column=0, sticky = "ew")
+# entry4 = tk.Label(previousReleases, text=fetchEntry4, font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=20, pady=5)
+# entry4.grid(row=4,column=0, sticky = "ew")
 
 #entry5 = tk.Label(previousReleases, text='', font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=20, pady=5)
 #entry5.grid(row=5,column=0, sticky = "ew")
