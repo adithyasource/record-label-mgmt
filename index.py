@@ -40,7 +40,7 @@ def doShit(frame):
 
     if songTitleValue == "song title":
         error = True
-    if releaseDate == "release date":
+    if releaseDate == "release date YYYY/MM/DD":
         error = True
     if performedByValue == 'performed by':
         error = True
@@ -49,6 +49,9 @@ def doShit(frame):
     if prodByValue == 'produced by':
         error = True
 
+
+
+
     if error == True:
         messagebox.showerror('internal error', 'update default values for text')
     elif error == False:
@@ -56,26 +59,30 @@ def doShit(frame):
         conn = sqlite3.connect('data.db')
         tableCreateQuery = '''
         CREATE TABLE IF NOT EXISTS releaseData (
-            songTitle TEXT
-            releaseDate DATE
-            performedBy TEXT
-            writtenBy TEXT
-            prodBy TEXT
-
-            popTag TEXT
-            hiphopTag TEXT
-            indieTag TEXT 
-            kpopTag TEXT
-            explicitTag TEXT 
-            inhouseTag TEXT 
+            songTitle TEXT,
+            releaseDate DATE,
+            performedBy TEXT,
+            writtenBy TEXT,
+            prodBy TEXT,
+            popTag TEXT,
+            hiphopTag TEXT,
+            indieTag TEXT,
+            kpopTag TEXT,
+            explicitTag TEXT,
+            inhouseTag TEXT,
             lofiTag TEXT
         )
         '''
         conn.execute(tableCreateQuery)
 
 
-
-
+        dataInsertQuery = '''
+            INSERT INTO releaseData VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')
+        '''.format(songTitleValue, releaseDateSQLVersion, performedByValue, writtenByValue, prodByValue, popVarValue, hiphopVarValue, indieVarValue, kpopVarValue, explicitVarValue, inhouseVarValue, lofiVarValue)
+      
+        cursor = conn.cursor()
+        cursor.execute(dataInsertQuery, {':null':None})
+        conn.commit()
         conn.close()
 
 
@@ -98,7 +105,7 @@ def doShit(frame):
         songTitle.insert(0, 'song title')
 
         releaseDate.delete(0, tk.END)
-        releaseDate.insert(0, 'release date')
+        releaseDate.insert(0, 'release date YYYY/MM/DD')
 
         performedBy.delete(0, tk.END)
         performedBy.insert(0, 'performed by')
@@ -228,7 +235,7 @@ tags.grid(row=2, column=0, sticky='w', pady=(15,0))
 #col2
 releaseDate = tk.Entry(splitGrid, borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=35, fg='#B0B0B0')
 releaseDate.grid(row=1,column=1, sticky = "nsew")
-releaseDate.insert(0, "release date")
+releaseDate.insert(0, "release date YYYY/MM/DD")
 
 performedBy = tk.Entry(splitGrid, borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=35, fg='#B0B0B0')
 performedBy.grid(row=3,column=1, sticky = "nsew", pady=(15,0))
