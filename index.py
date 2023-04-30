@@ -3,7 +3,6 @@ from PIL import Image, ImageTk
 from tkinter import messagebox
 from tkinter import filedialog
 import sqlite3
-import itertools
 import customtkinter
 
 # app frame
@@ -11,10 +10,11 @@ window = tk.Tk()
 window.title('MIMIC Internal Mgmt')
 window.geometry('1000x450')
 window.resizable(False, True)
-window.iconbitmap('C:\\Users\\getsg\\Documents\\GitHub\\music mgmt\\mimic.ico')
+window.iconbitmap('mimic.ico')
 window.configure(bg='#FFFFFF')
 frame = tk.Frame(window, bg='#FFFFFF')
 frame2 = tk.Frame(window, bg='#FFFFFF')
+customtkinter.set_appearance_mode('light')
 
 for page in (frame, frame2):
     page.grid(row=0, column=0, sticky='nsew', padx=75, pady=7)
@@ -34,13 +34,17 @@ tableCreateQuery = '''
             inhouseTag TEXT,
             lofiTag TEXT,
             artworkImage BLOB,
-            songFile BLOB
+            artworkLocation TEXT,
+            songFile TEXT
         )
         '''
 
 def askForImage():
     global getImage
     getImage = filedialog.askopenfilenames(title='select artwork', filetypes=(('png', "*.png"), ("jpg", "*.jpg")))
+    global imageLocation
+    imageLocation = str(getImage)[2:-3]
+
     if getImage:
         # create PhotoImage from image file
         global photo
@@ -60,19 +64,18 @@ def askForImage():
 def askForSong():
     global getSong
     getSong = filedialog.askopenfilenames(title='select song', filetypes=(('mp3', "*.mp3"), ("wav", "*.wav")))
-
-    getSong = str(getSong)[2:-3]
+    global songLocation
+    songLocation = str(getSong)[2:-3]
+    global proxyLocationOfTheSong
+    proxyLocationOfTheSong = str(songLocation)
+    
 
 def convertImageIntoBinary(photo):
     with open(photo, 'rb') as file:
         PhotoImage = file.read() 
     return PhotoImage
 
-def convertSongIntoBinary(getSong):
-    with open(getSong, 'rb') as file:
-        global songData
-        songData = file.read()
-    return songData
+
 
 def showPage(frame):
     frame.tkraise()
@@ -81,6 +84,10 @@ showPage(frame)
 
 def doShit(frame):
     #reading values
+    if proxyLocationOfTheSong:
+        proxyLocationOfTheSong = None
+    else:
+        proxyLocationOfTheSong = str(songLocation)
     songTitleValue = songTitle.get()
     releaseDateValue = releaseDate.get()
     performedByValue = performedBy.get()
@@ -112,30 +119,17 @@ def doShit(frame):
         conn = sqlite3.connect('data.db')
         conn.execute(tableCreateQuery)
         dataInsertQuery = '''
-            INSERT INTO releaseData(songTitle, releaseDate, performedBy, writtenBy, prodBy, popTag, hiphopTag, indieTag, kpopTag, explicitTag, inhouseTag, lofiTag, artworkImage, songFile) 
-            VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', ?, ?)
+            INSERT INTO releaseData(songTitle, releaseDate, performedBy, writtenBy, prodBy, popTag, hiphopTag, indieTag, kpopTag, explicitTag, inhouseTag, lofiTag, artworkImage, artworkLocation, songFile) 
+            VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', ?, ?, ?)
             '''.format(songTitleValue, releaseDateValue, performedByValue, writtenByValue, prodByValue, popVarValue, hiphopVarValue, indieVarValue, kpopVarValue, explicitVarValue, inhouseVarValue, lofiVarValue)
         cursor = conn.cursor()
         for image in getImage:
-            global insertSong
-            insertSong = convertSongIntoBinary(getSong)
             insertPhoto = convertImageIntoBinary(image)
-            cursor.execute(dataInsertQuery, (insertPhoto, insertSong))
+            cursor.execute(dataInsertQuery, (insertPhoto,imageLocation, proxyLocationOfTheSong))
+
+
         conn.commit()
         conn.close()
-        #savedata
-        print(songTitleValue)
-        print(releaseDateValue)
-        print(performedByValue)
-        print(writtenByValue)
-        print(prodByValue)
-        print(popVarValue)
-        print(hiphopVarValue)
-        print(indieVarValue)
-        print(explicitVarValue)
-        print(kpopVarValue)
-        print(inhouseVarValue)
-        print(lofiVarValue)
         songTitle.delete(0, tk.END)
         songTitle.insert(0, 'song title')
         releaseDate.delete(0, tk.END)
@@ -148,6 +142,7 @@ def doShit(frame):
         prodBy.insert(0, 'produced by')
         importArtworkImage.config(text='import artwork', image="", bg='#FFFFFF')
         popTag.deselect()
+        proxyLocationOfTheSong = None
         hiphopTag.deselect()
         indieTag.deselect()
         explicitTag.deselect()
@@ -159,7 +154,7 @@ def doShit(frame):
 
 # PAGE 1 
 
-logo = tk.PhotoImage(file='C:\\Users\\getsg\\Documents\\GitHub\\music mgmt\\mimic logo full.png')
+logo = tk.PhotoImage(file='mimic logo full.png')
 topLabel = tk.Label(frame, image=logo, anchor='w', bg='#FFFFFF')
 topLabel.grid(row=0, column=0, pady=(30,10), sticky = "ew", )
 createRelease = tk.Button(frame, text="create release", font='"Space Grotesk" 13', width=80, anchor='w', bg='#FFFFFF', relief='solid', borderwidth=1, activebackground='#FFFFFF', padx=20, command=lambda: showPage(frame2), cursor='hand2')
@@ -198,7 +193,7 @@ songTitle.insert(0, "song title")
 tags = tk.Label(splitGrid, bg='#FFFFFF',  borderwidth=0, relief='flat', justify='left')
 #first row
 popVar = tk.StringVar()
-popTag = customtkinter.CTkCheckBox(tags, text="pop", font=customtkinter.CTkFont(family='Space Grotesk', size=13), border_width=1, corner_radius=0, checkbox_height=20, checkbox_width=20, variable=popVar, onvalue='pop', offvalue='NULL', hover=False, fg_color='#000000')
+popTag = customtkinter.CTkCheckBox(tags, text="pop", font=customtkinter.CTkFont(family='Space Grotesk', size=13), border_width=1, corner_radius=0, checkbox_height=20, checkbox_width=20, variable=popVar, onvalue='pop', offvalue='NULL', hover=False, fg_color='#EEEEEE')
 popTag.deselect()
 popTag.grid(row=0, column=0, sticky='w')
 hiphopVar = tk.StringVar()
