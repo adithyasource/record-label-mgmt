@@ -1,9 +1,10 @@
 import tkinter as tk
+from PIL import Image, ImageTk
 from tkinter import messagebox
+from tkinter import filedialog
 import sqlite3
 import itertools
 import customtkinter
-
 
 # app frame
 window = tk.Tk()
@@ -18,12 +19,50 @@ frame2 = tk.Frame(window, bg='#FFFFFF')
 for page in (frame, frame2):
     page.grid(row=0, column=0, sticky='nsew', padx=75, pady=7)
 
+def filedialogs():
+    global getImage
+    getImage = filedialog.askopenfilenames(title='select artwork', filetypes=(('png', "*.png"), ("jpg", "*.jpg")))
+    if getImage:
+        # create PhotoImage from image file
+        global photo
+        photo = Image.open(getImage[0])
 
+        resizedPhoto = photo.resize((140, 140))
+
+        newPhoto = ImageTk.PhotoImage(resizedPhoto)
+
+        # delete previous content and insert image
+        importArtworkImage.image = newPhoto
+
+        importArtworkImage.config(text='', image=newPhoto)
+
+def convertImageIntoBinary(photo):
+    with open(photo, 'rb') as file:
+        PhotoImage = file.read()
+    return PhotoImage
 
 def showPage(frame):
     frame.tkraise()
 
 showPage(frame)
+
+tableCreateQuery = '''
+        CREATE TABLE IF NOT EXISTS releaseData (
+            songTitle TEXT,
+            releaseDate DATE,
+            performedBy TEXT,
+            writtenBy TEXT,
+            prodBy TEXT,
+            popTag TEXT,
+            hiphopTag TEXT,
+            indieTag TEXT,
+            kpopTag TEXT,
+            explicitTag TEXT,
+            inhouseTag TEXT,
+            lofiTag TEXT,
+            artworkImage BLOB
+        )
+        '''
 
 def doShit(frame):
     #reading values
@@ -43,7 +82,7 @@ def doShit(frame):
 
     if songTitleValue == "song title":
         error = True
-    if releaseDate == "release date YYYY/MM/DD":
+    if releaseDate == "release date yyyy/mm/dd":
         error = True
     if performedByValue == 'performed by':
         error = True
@@ -52,30 +91,14 @@ def doShit(frame):
     if prodByValue == 'produced by':
         error = True
 
-
-
+    
 
     if error == True:
         messagebox.showerror('internal error', 'update default values for text')
     elif error == False:
         
         conn = sqlite3.connect('data.db')
-        tableCreateQuery = '''
-        CREATE TABLE IF NOT EXISTS releaseData (
-            songTitle TEXT,
-            releaseDate DATE,
-            performedBy TEXT,
-            writtenBy TEXT,
-            prodBy TEXT,
-            popTag TEXT,
-            hiphopTag TEXT,
-            indieTag TEXT,
-            kpopTag TEXT,
-            explicitTag TEXT,
-            inhouseTag TEXT,
-            lofiTag TEXT
-        )
-        '''
+        
         conn.execute(tableCreateQuery)
 
         # if popVarValue == "NULL":
@@ -94,12 +117,16 @@ def doShit(frame):
         #     lofiVarValue = None
 
         dataInsertQuery = '''
-            INSERT INTO releaseData VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')
+        INSERT INTO releaseData(songTitle, releaseDate, performedBy, writtenBy, prodBy, popTag, hiphopTag, indieTag, kpopTag, explicitTag, inhouseTag, lofiTag, artworkImage) 
+        VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', ?)
         '''.format(songTitleValue, releaseDateValue, performedByValue, writtenByValue, prodByValue, popVarValue, hiphopVarValue, indieVarValue, kpopVarValue, explicitVarValue, inhouseVarValue, lofiVarValue)
-      
         cursor = conn.cursor()
-        cursor.execute(dataInsertQuery)
+        for image in getImage:
+            insertPhoto = convertImageIntoBinary(image)
+            cursor.execute(dataInsertQuery, [insertPhoto])
         conn.commit()
+
+        
         conn.close()
 
 
@@ -122,7 +149,7 @@ def doShit(frame):
         songTitle.insert(0, 'song title')
 
         releaseDate.delete(0, tk.END)
-        releaseDate.insert(0, 'release date YYYY/MM/DD')
+        releaseDate.insert(0, 'release date yyy/mm/dd')
 
         performedBy.delete(0, tk.END)
         performedBy.insert(0, 'performed by')
@@ -133,6 +160,11 @@ def doShit(frame):
         prodBy.delete(0, tk.END)
         prodBy.insert(0, 'produced by')
 
+
+
+        importArtworkImage.config(text='import artwork', image="", bg='#FFFFFF')
+
+
         popTag.deselect()
         hiphopTag.deselect()
         indieTag.deselect()
@@ -140,18 +172,12 @@ def doShit(frame):
         kpopTag.deselect()
         inhouseTag.deselect()
         lofiTag.deselect()
-
+        
+        addValuesToDB()
         frame.tkraise()
 
 
-        
-
-
-
     
-    
-
-
 
 # PAGE 1 
 
@@ -165,39 +191,33 @@ createRelease = tk.Button(frame, text="create release", font='"Space Grotesk" 13
 createRelease.grid(row=1, column=0, pady=10, sticky = "ew")
 
 
-
-
-
-
 previousReleases = tk.Frame(frame, bg='#FFFFFF',  borderwidth=1, relief='solid', width=100)
 
 previousReleasesText = tk.Label(previousReleases, text='previous releases', font='"Space Grotesk" 13', anchor='w', padx=20, bg='#FFFFFF', foreground='#B0B0B0', pady=5)
 previousReleasesText.grid(row=0,column=0, sticky = "ew")  
 
 
-conn = sqlite3.connect('data.db')
-cursor = conn.cursor()
-cursor.execute("SELECT songTitle from releaseData")
-fetchAllEntries = cursor.fetchall()
-numberOfEntries = len(fetchAllEntries)
 
-for i in range(numberOfEntries):
-    globals()[f'fetchEntry{i+1}'] = fetchAllEntries[i]
-    globals()[f'fetchEntry{i+1}'] = str(globals()[f'fetchEntry{i+1}'])[2:-3]
-    globals()[f'entry{i+1}'] = tk.Label(previousReleases, text=globals()[f'fetchEntry{i+1}'], font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=20, pady=5)
-    globals()[f'entry{i+1}'].grid(row=i+1,column=0, sticky = "ew") 
-conn.commit()
-conn.close()
+def addValuesToDB():
+    conn = sqlite3.connect('data.db')
+    
+    conn.execute(tableCreateQuery)
+    cursor = conn.cursor()
+    cursor.execute("SELECT songTitle from releaseData")
+    fetchAllEntries = cursor.fetchall()
+    numberOfEntries = len(fetchAllEntries)
+
+    for i in range(numberOfEntries):
+        globals()[f'fetchEntry{i+1}'] = fetchAllEntries[i]
+        globals()[f'fetchEntry{i+1}'] = str(globals()[f'fetchEntry{i+1}'])[2:-3]
+        globals()[f'entry{i+1}'] = tk.Label(previousReleases, text=globals()[f'fetchEntry{i+1}'], font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=20, pady=5)
+        globals()[f'entry{i+1}'].grid(row=i+1,column=0, sticky = "ew") 
+    conn.commit()
+    conn.close()
+
+addValuesToDB()
 
 previousReleases.grid(row=2,column=0, sticky = "ew", pady=10)
-
-
-
-
-
-
-
-
 
 
 
@@ -269,14 +289,36 @@ tags.grid(row=2, column=0, sticky='w', pady=(15,0))
 
 
 
+importsGrid = tk.Label(splitGrid, bg='#FFFFFF',  borderwidth=0, relief='flat', justify='left')
+
+##
+importArtworkImage = tk.Button(importsGrid, text="import artwork", font='"Space Grotesk" 13', anchor='sw', bg='#FFFFFF',fg='#B0B0B0', relief='solid', borderwidth=1, activebackground='#FFFFFF',activeforeground='#B0B0B0', cursor='hand2', justify=tk.LEFT, command=filedialogs)
+importArtworkImage.grid(row=0, column=0, sticky='news', padx=(0,20))
+
+importsGridInside = tk.Label(importsGrid, bg='#FFFFFF',  borderwidth=0, relief='flat', justify='right')
+
+##
+importSong = tk.Button(importsGridInside, text="import song", font='"Space Grotesk" 13', anchor='sw', bg='#FFFFFF',fg='#B0B0B0', relief='solid', borderwidth=1, activebackground='#FFFFFF',activeforeground='#B0B0B0',  cursor='hand2', justify=tk.LEFT, height=3)
+importSong.grid(row=0,column=0, sticky='news', pady=(0,19))
+
+##
+addMiscFiles = tk.Entry(importsGridInside, borderwidth=1, relief='solid', font='"Space Grotesk" 13', fg='#B0B0B0')
+addMiscFiles.grid(row=1,column=0, sticky = "nsew")  
+addMiscFiles.insert(0, "link to misc files")
+
+
+importsGridInside.grid(row=0, column=1, padx=(10,0), sticky='e')
+importsGrid.grid(row=3, column=0, sticky='w', pady=(20,0), rowspan=3)
+
+
 
 #col2
 releaseDate = tk.Entry(splitGrid, borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=35, fg='#B0B0B0')
 releaseDate.grid(row=1,column=1, sticky = "nsew")
-releaseDate.insert(0, "release date YYYY/MM/DD")
+releaseDate.insert(0, "release date yyyy/mm/dd")
 
 performedBy = tk.Entry(splitGrid, borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=35, fg='#B0B0B0')
-performedBy.grid(row=3,column=1, sticky = "nsew", pady=(15,0))
+performedBy.grid(row=3,column=1, sticky = "nsew", pady=(20,0))
 performedBy.insert(0, "performed by")
 
 writtenBy = tk.Entry(splitGrid, borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=35, fg='#B0B0B0')
@@ -288,7 +330,7 @@ prodBy.grid(row=5,column=1, sticky = "nsew", pady=(15,0))
 prodBy.insert(0, "produced by")
 
 
-saveRelease = tk.Button(splitGrid, font='"Space Grotesk" 13', bg='#FFFFFF', text='save release', relief='flat', activebackground='#FFFFFF', command=lambda: [doShit(frame)], borderwidth=0, cursor='hand2')
+saveRelease = tk.Button(splitGrid, font='"Space Grotesk" 13', bg='#FFFFFF', text='save release', relief='flat', activebackground='#FFFFFF', command=lambda: [doShit(frame), convertImageIntoBinary(photo)], borderwidth=0, cursor='hand2')
 saveRelease.grid(row= 6, column=1, pady=(30,0), sticky='e')
 
 splitGrid.grid(row=1, column=0, sticky='ew')
