@@ -15,6 +15,8 @@ window.configure(bg='#FFFFFF')
 frame = tk.Frame(window, bg='#FFFFFF')
 frame2 = tk.Frame(window, bg='#FFFFFF')
 customtkinter.set_appearance_mode('light')
+songLocation = ''
+
 
 for page in (frame, frame2):
     page.grid(row=0, column=0, sticky='nsew', padx=75, pady=7)
@@ -61,20 +63,21 @@ def askForImage():
         global isImage
         isImage = True
 
+isSongButtonClicked = False
+
 def askForSong():
     global getSong
     getSong = filedialog.askopenfilenames(title='select song', filetypes=(('mp3', "*.mp3"), ("wav", "*.wav")))
     global songLocation
+
     songLocation = str(getSong)[2:-3]
-    global proxyLocationOfTheSong
-    proxyLocationOfTheSong = str(songLocation)
-    
+    global isSongButtonClicked
+    isSongButtonClicked = True
 
 def convertImageIntoBinary(photo):
     with open(photo, 'rb') as file:
         PhotoImage = file.read() 
     return PhotoImage
-
 
 
 def showPage(frame):
@@ -84,10 +87,9 @@ showPage(frame)
 
 def doShit(frame):
     #reading values
-    if proxyLocationOfTheSong:
-        proxyLocationOfTheSong = None
-    else:
-        proxyLocationOfTheSong = str(songLocation)
+
+
+    
     songTitleValue = songTitle.get()
     releaseDateValue = releaseDate.get()
     performedByValue = performedBy.get()
@@ -102,6 +104,9 @@ def doShit(frame):
     lofiVarValue = lofiVar.get()
     error = False
 
+    
+
+
     if songTitleValue == "song title":
         error = True
     if releaseDate == "release date yyyy/mm/dd":
@@ -113,44 +118,69 @@ def doShit(frame):
     if prodByValue == 'produced by':
         error = True
 
-    if error == True:
-        messagebox.showerror('internal error', 'update default values for text')
-    elif error == False:
-        conn = sqlite3.connect('data.db')
-        conn.execute(tableCreateQuery)
-        dataInsertQuery = '''
-            INSERT INTO releaseData(songTitle, releaseDate, performedBy, writtenBy, prodBy, popTag, hiphopTag, indieTag, kpopTag, explicitTag, inhouseTag, lofiTag, artworkImage, artworkLocation, songFile) 
-            VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', ?, ?, ?)
-            '''.format(songTitleValue, releaseDateValue, performedByValue, writtenByValue, prodByValue, popVarValue, hiphopVarValue, indieVarValue, kpopVarValue, explicitVarValue, inhouseVarValue, lofiVarValue)
-        cursor = conn.cursor()
-        for image in getImage:
-            insertPhoto = convertImageIntoBinary(image)
-            cursor.execute(dataInsertQuery, (insertPhoto,imageLocation, proxyLocationOfTheSong))
+    if popVarValue == "NULL":
+        popVarValue = None
+    if hiphopVarValue == "NULL":
+        hiphopVarValue = None
+    if indieVarValue == "NULL":
+        indieVarValue = None
+    if kpopVarValue == "NULL":
+        kpopVarValue = None
+    if explicitVarValue == "NULL":
+        explicitVarValue = None
+    if inhouseVarValue == "NULL":
+        inhouseVarValue = None
+    if lofiVarValue == "NULL":
+        lofiVarValue = None
 
-
-        conn.commit()
-        conn.close()
-        songTitle.delete(0, tk.END)
-        songTitle.insert(0, 'song title')
-        releaseDate.delete(0, tk.END)
-        releaseDate.insert(0, 'release date yyy/mm/dd')
-        performedBy.delete(0, tk.END)
-        performedBy.insert(0, 'performed by')
-        writtenBy.delete(0, tk.END)
-        writtenBy.insert(0, 'written by')
-        prodBy.delete(0, tk.END)
-        prodBy.insert(0, 'produced by')
-        importArtworkImage.config(text='import artwork', image="", bg='#FFFFFF')
-        popTag.deselect()
-        proxyLocationOfTheSong = None
-        hiphopTag.deselect()
-        indieTag.deselect()
-        explicitTag.deselect()
-        kpopTag.deselect()
-        inhouseTag.deselect()
-        lofiTag.deselect()
-        addValuesToDB()
-        frame.tkraise()
+    global songLocation
+    global getSong
+    global isSongButtonClicked
+    if isSongButtonClicked == False:
+        songLocation = None
+        messagebox.showerror('internal error', 'include song')
+    else:
+        isSongButtonClicked == True
+        songLocation = str(getSong)[2:-3]
+        if error == True:
+            messagebox.showerror('internal error', 'update default values for text')
+        elif error == False:
+            conn = sqlite3.connect('data.db')
+            conn.execute(tableCreateQuery)
+            dataInsertQuery = '''
+                INSERT INTO releaseData(songTitle, releaseDate, performedBy, writtenBy, prodBy, popTag, hiphopTag, indieTag, kpopTag, explicitTag, inhouseTag, lofiTag, artworkImage, artworkLocation, songFile) 
+                VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', ?, ?, ?)
+                '''.format(songTitleValue, releaseDateValue, performedByValue, writtenByValue, prodByValue, popVarValue, hiphopVarValue, indieVarValue, kpopVarValue, explicitVarValue, inhouseVarValue, lofiVarValue)
+            cursor = conn.cursor()
+            for image in getImage:
+                insertPhoto = convertImageIntoBinary(image)
+                cursor.execute(dataInsertQuery, (insertPhoto, imageLocation, songLocation))
+            conn.commit()
+            conn.close()
+            songTitle.delete(0, tk.END)
+            songTitle.insert(0, 'song title')
+            releaseDate.delete(0, tk.END)
+            releaseDate.insert(0, 'release date yyy/mm/dd')
+            performedBy.delete(0, tk.END)
+            performedBy.insert(0, 'performed by')
+            writtenBy.delete(0, tk.END)
+            writtenBy.insert(0, 'written by')
+            prodBy.delete(0, tk.END)
+            prodBy.insert(0, 'produced by')
+            importArtworkImage.config(text='import artwork', image="", bg='#FFFFFF')
+            songLocation = None
+            isSongButtonClicked = False
+            popTag.deselect()
+            hiphopTag.deselect()
+            indieTag.deselect()
+            explicitTag.deselect()
+            kpopTag.deselect()
+            inhouseTag.deselect()
+            lofiTag.deselect()
+            addValuesToDB()
+            frame.tkraise()
+    
+    
 
 # PAGE 1 
 
