@@ -6,6 +6,7 @@ import sqlite3
 from customtkinter import set_appearance_mode
 from customtkinter import CTkCheckBox
 from customtkinter import CTkFont
+import io
 
 # app frame
 window = tk.Tk()
@@ -229,12 +230,16 @@ def addValuesToDB():
     fetchAllEntries = cursor.fetchall()
     numberOfEntries = len(fetchAllEntries)
 
+    def createCommand(entry):
+        return lambda: showEntryPage(entry)
+
     for i in range(numberOfEntries):
-        globals()[f'fetchEntry{i+1}'] = fetchAllEntries[i]
-        globals()[f'fetchEntry{i+1}'] = str(globals()[f'fetchEntry{i+1}'])[2:-3]
-        globals()[f'entry{i+1}'] = tk.Button(previousReleases, text=globals()[f'fetchEntry{i+1}'], font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=20, pady=5, borderwidth=0, width=90, cursor='hand2', command=lambda: [showEntryPage(globals()[f'fetchEntry{i+1}'])])
-        globals()[f'entry{i+1}'].grid(row=i+1,column=0, sticky = "ew") 
-        
+        fetchEntry = fetchAllEntries[i]
+        fetchEntry = str(fetchEntry)[2:-3]
+        entry = tk.Button(previousReleases, text=fetchEntry, font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=20, pady=5, borderwidth=0, width=90, cursor='hand2', command=createCommand(fetchEntry))
+        entry.grid(row=i+1, column=0, sticky="ew")
+    
+
     conn.commit()
     conn.close()
 addValuesToDB()
@@ -322,31 +327,18 @@ splitGrid.grid(row=1, column=0, sticky='ew')
 #################
 #################
 
-def showEntryPage(lmao):
+def showEntryPage(recievedData):
 
-    conn = sqlite3.connect('data.db')
-    cursor = conn.cursor()
-    cursor.execute("SELECT songTitle from releaseData")
-    fetchAllEntries = cursor.fetchall()
-    numberOfEntries = len(fetchAllEntries)
-
-    for i in range(numberOfEntries):
-        globals()[f'fetchEntry{i+1}'] = fetchAllEntries[i]
-        globals()[f'fetchEntry{i+1}'] = str(globals()[f'fetchEntry{i+1}'])[2:-3]
-        globals()[f'entry{i+1}'] = tk.Button(previousReleases, text=globals()[f'fetchEntry{i+1}'], font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=20, pady=5, borderwidth=0, width=90, cursor='hand2', command=lambda: [showEntryPage(globals()[f'fetchEntry{i+1}'])])
-        globals()[f'entry{i+1}'].grid(row=i+1,column=0, sticky = "ew") 
-        
-    conn.commit()
-    conn.close()
-
+    
 
     conn = sqlite3.connect('data.db')
     cursor = conn.cursor()
 
     selectValuesFromTable = '''SELECT * FROM releaseData WHERE songTitle = ?'''
-    cursor.execute(selectValuesFromTable, (str(lmao),))
+    cursor.execute(selectValuesFromTable, (str(recievedData),))
 
 
+    
 
     
     fetchAllEntries = cursor.fetchall()
@@ -356,8 +348,18 @@ def showEntryPage(lmao):
     conn.close()
 
     songTitleTempValue, releaseDateTempValue, performedByTempValue, writtenByTempValue, prodByTempValue, popVarTempValue, hiphopVarTempValue, indieVarTempValue, kpopVarTempValue, explicitVarTempValue, inhouseVarTempValue, lofiVarTempValue, ArtworkImageLocationTempValue, importSongTempValue, addMiscFilesTempValue, importArtworkImageTempValue = fetchAllEntries[0]
+    # photoTemp = Image.frombytes("RGBA", (140,140), importArtworkImageTempValue)
 
-    print(songTitleTempValue)
+    # resizedPhotoTemp = photoTemp.resize((140, 140))
+    # global newPhotoTemp
+    # newPhotoTemp = ImageTk.PhotoImage(resizedPhotoTemp)
+
+    stream = io.BytesIO(importArtworkImageTempValue)
+
+    image = Image.open(stream)
+    resizedPhoto = image.resize((140, 140))
+    global newPhotoTemp
+    newPhotoTemp = ImageTk.PhotoImage(resizedPhoto)
 
     tempFrameForEntry.tkraise()
     backButtonTemp = tk.Button(tempFrameForEntry, text="< back", font='"Space Grotesk" 13', width=100, anchor='w', bg='#FFFFFF', relief='flat', activebackground='#FFFFFF', borderwidth=0, cursor='hand2', command=lambda: showPage(frame))
@@ -369,63 +371,58 @@ def showEntryPage(lmao):
     tagsTemp = tk.Label(splitGridTemp, bg='#FFFFFF',  borderwidth=0, relief='flat', justify='left')
     #first row
     popVarTemp = tk.StringVar()
-    popTagTemp = CTkCheckBox(tagsTemp, text="pop", font=CTkFont(family='Space Grotesk', size=13), border_width=1, corner_radius=0, checkbox_height=20, checkbox_width=20, variable=popVar, onvalue='pop', offvalue='NULL', hover=False, fg_color='#000000')
+    popTagTemp = CTkCheckBox(tagsTemp, text="pop", font=CTkFont(family='Space Grotesk', size=13), border_width=1, corner_radius=0, checkbox_height=20, checkbox_width=20, variable=popVarTemp, onvalue='pop', offvalue='NULL', hover=False, fg_color='#000000')
     popTagTemp.deselect()
     popTagTemp.grid(row=0, column=0, sticky='w')
     hiphopVarTemp = tk.StringVar()
-    hiphopTagTemp = CTkCheckBox(tagsTemp, text="hip hop", font=CTkFont(family='Space Grotesk', size=13), border_width=1, corner_radius=0, checkbox_height=20, checkbox_width=20, variable=hiphopVar, onvalue='hiphop', offvalue='NULL', hover=False, fg_color='#000000')
+    hiphopTagTemp = CTkCheckBox(tagsTemp, text="hip hop", font=CTkFont(family='Space Grotesk', size=13), border_width=1, corner_radius=0, checkbox_height=20, checkbox_width=20, variable=hiphopVarTemp, onvalue='hiphop', offvalue='NULL', hover=False, fg_color='#000000')
     hiphopTagTemp.deselect()
     hiphopTagTemp.grid(row=0, column=1 , sticky='w')
     indieVarTemp = tk.StringVar()
-    indieTagTemp = CTkCheckBox(tagsTemp, text="indie", font=CTkFont(family='Space Grotesk', size=13), border_width=1, corner_radius=0, checkbox_height=20, checkbox_width=20, variable=indieVar, onvalue='indie', offvalue='NULL', hover=False, fg_color='#000000')
+    indieTagTemp = CTkCheckBox(tagsTemp, text="indie", font=CTkFont(family='Space Grotesk', size=13), border_width=1, corner_radius=0, checkbox_height=20, checkbox_width=20, variable=indieVarTemp, onvalue='indie', offvalue='NULL', hover=False, fg_color='#000000')
     indieTagTemp.deselect()
     indieTagTemp.grid(row=0, column=2 , sticky='w')
     kpopVarTemp = tk.StringVar()
-    kpopTagTemp = CTkCheckBox(tagsTemp, text="kpop", font=CTkFont(family='Space Grotesk', size=13), border_width=1, corner_radius=0, checkbox_height=20, checkbox_width=20, variable=kpopVar, onvalue='kpop', offvalue='NULL', hover=False, fg_color='#000000')
+    kpopTagTemp = CTkCheckBox(tagsTemp, text="kpop", font=CTkFont(family='Space Grotesk', size=13), border_width=1, corner_radius=0, checkbox_height=20, checkbox_width=20, variable=kpopVarTemp, onvalue='kpop', offvalue='NULL', hover=False, fg_color='#000000')
     kpopTagTemp.deselect()
     kpopTagTemp.grid(row=0, column=3 , sticky='w')
     #second row
     explicitVarTemp = tk.StringVar()
-    explicitTagTemp = CTkCheckBox(tagsTemp, text="explicit", font=CTkFont(family='Space Grotesk', size=13), border_width=1, corner_radius=0, checkbox_height=20, checkbox_width=20, variable=explicitVar, onvalue='explicit', offvalue='NULL', hover=False, fg_color='#000000')
+    explicitTagTemp = CTkCheckBox(tagsTemp, text="explicit", font=CTkFont(family='Space Grotesk', size=13), border_width=1, corner_radius=0, checkbox_height=20, checkbox_width=20, variable=explicitVarTemp, onvalue='explicit', offvalue='NULL', hover=False, fg_color='#000000')
     explicitTagTemp.deselect()
     explicitTagTemp.grid(row=1, column=0, sticky='w')
     inhouseVarTemp = tk.StringVar()
-    inhouseTagTemp = CTkCheckBox(tagsTemp, text="inhouse", font=CTkFont(family='Space Grotesk', size=13), border_width=1, corner_radius=0, checkbox_height=20, checkbox_width=20, variable=inhouseVar, onvalue='inhouse', offvalue='NULL', hover=False, fg_color='#000000')
+    inhouseTagTemp = CTkCheckBox(tagsTemp, text="inhouse", font=CTkFont(family='Space Grotesk', size=13), border_width=1, corner_radius=0, checkbox_height=20, checkbox_width=20, variable=inhouseVarTemp, onvalue='inhouse', offvalue='NULL', hover=False, fg_color='#000000')
     inhouseTagTemp.deselect()
     inhouseTagTemp.grid(row=1, column=1, sticky='w')
     lofiVarTemp = tk.StringVar()
-    lofiTagTemp = CTkCheckBox(tagsTemp, text="lofi", font=CTkFont(family='Space Grotesk', size=13), border_width=1, corner_radius=0, checkbox_height=20, checkbox_width=20, variable=lofiVar, onvalue='lofi', offvalue='NULL', hover=False, fg_color='#000000')
+    lofiTagTemp = CTkCheckBox(tagsTemp, text="lofi", font=CTkFont(family='Space Grotesk', size=13), border_width=1, corner_radius=0, checkbox_height=20, checkbox_width=20, variable=lofiVarTemp, onvalue='lofi', offvalue='NULL', hover=False, fg_color='#000000')
     lofiTagTemp.deselect()
     lofiTagTemp.grid(row=1, column=2, sticky='w')
     tagsTemp.grid(row=2, column=0, sticky='w', pady=(15,0))
     importsGridTemp = tk.Label(splitGridTemp, bg='#FFFFFF',  borderwidth=0, relief='flat', justify='left')
     ##
-    importArtworkImageTemp = tk.Button(importsGridTemp, text="import artwork", font='"Space Grotesk" 13', anchor='sw', bg='#FFFFFF',fg='#B0B0B0', relief='solid', borderwidth=1, activebackground='#FFFFFF',activeforeground='#B0B0B0', cursor='hand2', justify=tk.LEFT,)
+    importArtworkImageTemp = tk.Button(importsGridTemp, image=newPhotoTemp, anchor='sw', bg='#FFFFFF',fg='#B0B0B0', relief='solid', borderwidth=1, activebackground='#FFFFFF',activeforeground='#B0B0B0', cursor='hand2', justify=tk.LEFT)
     importArtworkImageTemp.grid(row=0, column=0, sticky='news', padx=(0,20))
     importsGridInsideTemp = tk.Label(importsGridTemp, bg='#FFFFFF',  borderwidth=0, relief='flat', justify='right')
     ##
     importSongTemp = tk.Button(importsGridInsideTemp, text="import song", font='"Space Grotesk" 13', anchor='sw', bg='#FFFFFF',fg='#B0B0B0', relief='solid', borderwidth=1, activebackground='#FFFFFF',activeforeground='#B0B0B0',  cursor='hand2', justify=tk.LEFT, height=3)
     importSongTemp.grid(row=0,column=0, sticky='news', pady=(0,19))
     ##
-    addMiscFilesTemp = tk.Entry(importsGridInsideTemp, borderwidth=1, relief='solid', font='"Space Grotesk" 13', fg='#B0B0B0')
+    addMiscFilesTemp = tk.Label(importsGridInsideTemp, text=addMiscFilesTempValue  ,borderwidth=1, relief='solid', font='"Space Grotesk" 13', fg='#B0B0B0')
     addMiscFilesTemp.grid(row=1,column=0, sticky = "nsew")  
-    addMiscFilesTemp.insert(0, "link to misc files")
     importsGridInsideTemp.grid(row=0, column=1, padx=(10,0), sticky='e')
     importsGridTemp.grid(row=3, column=0, sticky='w', pady=(20,0), rowspan=3)
 
     #col2
-    releaseDateTemp = tk.Entry(splitGridTemp, borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=35, fg='#B0B0B0')
+    releaseDateTemp = tk.Label(splitGridTemp, text=releaseDateTempValue, borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=35, fg='#B0B0B0')
     releaseDateTemp.grid(row=1,column=1, sticky = "nsew")
-    releaseDateTemp.insert(0, "release date yyyy/mm/dd")
-    performedByTemp = tk.Entry(splitGridTemp, borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=35, fg='#B0B0B0')
+    performedByTemp = tk.Label(splitGridTemp, text=performedByTempValue  ,borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=35, fg='#B0B0B0')
     performedByTemp.grid(row=3,column=1, sticky = "nsew", pady=(20,0))
-    performedByTemp.insert(0, "performed by")
-    writtenByTemp = tk.Entry(splitGridTemp, borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=35, fg='#B0B0B0')
+    writtenByTemp = tk.Label(splitGridTemp, text=writtenByTempValue  ,borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=35, fg='#B0B0B0')
     writtenByTemp.grid(row=4,column=1, sticky = "nsew", pady=(15,0))
-    writtenByTemp.insert(0, "written by")
-    prodByTemp = tk.Entry(splitGridTemp, borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=35, fg='#B0B0B0')
+    prodByTemp = tk.Label(splitGridTemp, text=prodByTempValue  ,borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=35, fg='#B0B0B0')
     prodByTemp.grid(row=5,column=1, sticky = "nsew", pady=(15,0))
-    prodByTemp.insert(0, "produced by")
 
     saveReleaseTemp = tk.Button(splitGridTemp, font='"Space Grotesk" 13', bg='#FFFFFF', text='save release', relief='flat', activebackground='#FFFFFF', borderwidth=0, cursor='hand2')
     saveReleaseTemp.grid(row= 6, column=1, pady=(30,0), sticky='e')
