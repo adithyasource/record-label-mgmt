@@ -366,7 +366,7 @@ def showEntryPage(recievedData):
     backButtonTemp.grid(row=0, column=0, pady=30)
     splitGridTemp = tk.Label(tempFrameForEntry, bg='#FFFFFF',  borderwidth=0, relief='flat')
     #col1
-    songTitleTemp = tk.Label(splitGridTemp, text=songTitleTempValue, borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=35, fg='#B0B0B0')
+    songTitleTemp = tk.Label(splitGridTemp, text=songTitleTempValue, borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=35, fg='#B0B0B0', bg='#FFFFFF', justify=tk.LEFT)
     songTitleTemp.grid(row=1,column=0, sticky = "nsew", padx=(0,50))  
     tagsTemp = tk.Label(splitGridTemp, bg='#FFFFFF',  borderwidth=0, relief='flat', justify='left')
     #first row
