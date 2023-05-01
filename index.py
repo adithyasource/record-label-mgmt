@@ -7,11 +7,14 @@ from customtkinter import set_appearance_mode
 from customtkinter import CTkCheckBox
 from customtkinter import CTkFont
 import io
+import shutil
+import os
+
 
 # app frame
 window = tk.Tk()
 window.title('MIMIC Internal Mgmt')
-window.geometry('1000x450')
+window.geometry('985x450')
 window.resizable(False, True)
 window.iconbitmap('mimic.ico')
 window.configure(bg='#FFFFFF')
@@ -78,7 +81,7 @@ def askForSong():
         if getSong:  # check if user selected at least one file
             break    # exit loop if user made a selection
     global songLocation
-    maxLengthOfText = 20
+    maxLengthOfText = 45
     songLocation = str(getSong)[2:-3]
     global isSongButtonClicked
     isSongButtonClicked = True
@@ -215,9 +218,9 @@ def doShit(frame):
 logo = tk.PhotoImage(file='mimic logo full.png')
 topLabel = tk.Label(frame, image=logo, anchor='w', bg='#FFFFFF')
 topLabel.grid(row=0, column=0, pady=(30,10), sticky = "ew", )
-createRelease = tk.Button(frame, text="create release", font='"Space Grotesk" 13', width=80, anchor='w', bg='#FFFFFF', relief='solid', borderwidth=1, activebackground='#FFFFFF', padx=20, command=lambda: showPage(frame2), cursor='hand2')
+createRelease = tk.Button(frame, text="create release", font='"Space Grotesk" 13', width=78, anchor='w', bg='#FFFFFF', relief='solid', borderwidth=1, activebackground='#FFFFFF', padx=20, command=lambda: showPage(frame2), cursor='hand2')
 createRelease.grid(row=1, column=0, pady=10, sticky = "ew")
-previousReleases = tk.Frame(frame, bg='#FFFFFF',  borderwidth=1, relief='solid', width=100)
+previousReleases = tk.Frame(frame, bg='#FFFFFF',  borderwidth=1, relief='solid', width=78)
 previousReleasesText = tk.Label(previousReleases, text='previous releases', font='"Space Grotesk" 13', anchor='w', padx=20, bg='#FFFFFF', foreground='#B0B0B0', pady=5)
 previousReleasesText.grid(row=0,column=0, sticky = "ew")  
 
@@ -236,7 +239,7 @@ def addValuesToDB():
     for i in range(numberOfEntries):
         fetchEntry = fetchAllEntries[i]
         fetchEntry = str(fetchEntry)[2:-3]
-        entry = tk.Button(previousReleases, text=fetchEntry, font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=20, pady=5, borderwidth=0, width=90, cursor='hand2', command=createCommand(fetchEntry))
+        entry = tk.Button(previousReleases, text=fetchEntry, font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=20, pady=5, borderwidth=0, width=87, cursor='hand2', command=createCommand(fetchEntry))
         entry.grid(row=i+1, column=0, sticky="ew")
     
 
@@ -295,7 +298,7 @@ importArtworkImage = tk.Button(importsGrid, text="import artwork", font='"Space 
 importArtworkImage.grid(row=0, column=0, sticky='news', padx=(0,20))
 importsGridInside = tk.Label(importsGrid, bg='#FFFFFF',  borderwidth=0, relief='flat', justify='right')
 ##
-importSong = tk.Button(importsGridInside, text="import song", font='"Space Grotesk" 13', anchor='sw', bg='#FFFFFF',fg='#B0B0B0', relief='solid', borderwidth=1, activebackground='#FFFFFF',activeforeground='#B0B0B0',  cursor='hand2', justify=tk.LEFT, height=3, command=askForSong)
+importSong = tk.Button(importsGridInside, text="import song", font='"Space Grotesk" 13', anchor='sw', bg='#FFFFFF',fg='#B0B0B0', relief='solid', borderwidth=1, activebackground='#FFFFFF',activeforeground='#B0B0B0',  cursor='hand2', justify=tk.LEFT, height=3, command=askForSong, wraplength=210)
 importSong.grid(row=0,column=0, sticky='news', pady=(0,19))
 ##
 addMiscFiles = tk.Entry(importsGridInside, borderwidth=1, relief='solid', font='"Space Grotesk" 13', fg='#B0B0B0')
@@ -319,7 +322,7 @@ prodBy.grid(row=5,column=1, sticky = "nsew", pady=(15,0))
 prodBy.insert(0, "produced by")
 
 saveRelease = tk.Button(splitGrid, font='"Space Grotesk" 13', bg='#FFFFFF', text='save release', relief='flat', activebackground='#FFFFFF', command=lambda: [doShit(frame), convertImageIntoBinary(photo)], borderwidth=0, cursor='hand2')
-saveRelease.grid(row= 6, column=1, pady=(30,0), sticky='e')
+saveRelease.grid(row= 6, column=1, pady=(20,0), sticky='e')
 splitGrid.grid(row=1, column=0, sticky='ew')
 
 
@@ -353,6 +356,11 @@ def showEntryPage(recievedData):
     # resizedPhotoTemp = photoTemp.resize((140, 140))
     # global newPhotoTemp
     # newPhotoTemp = ImageTk.PhotoImage(resizedPhotoTemp)
+    maxLengthOfTextTemp = 45
+    songShortenedLocationTemp = importSongTempValue[:maxLengthOfTextTemp] + "..." if len(importSongTempValue) > maxLengthOfTextTemp else importSongTempValue
+
+    maxLengthOfMiscTextTemp = 40
+    addMiscFilesTempValue = addMiscFilesTempValue[:maxLengthOfMiscTextTemp] + "..." if len(addMiscFilesTempValue) > maxLengthOfMiscTextTemp else addMiscFilesTempValue
 
     stream = io.BytesIO(importArtworkImageTempValue)
 
@@ -366,8 +374,8 @@ def showEntryPage(recievedData):
     backButtonTemp.grid(row=0, column=0, pady=30)
     splitGridTemp = tk.Label(tempFrameForEntry, bg='#FFFFFF',  borderwidth=0, relief='flat')
     #col1
-    songTitleTemp = tk.Label(splitGridTemp, text=songTitleTempValue, borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=35, fg='#B0B0B0', bg='#FFFFFF', justify=tk.LEFT)
-    songTitleTemp.grid(row=1,column=0, sticky = "nsew", padx=(0,50))  
+    songTitleTemp = tk.Label(splitGridTemp, text=songTitleTempValue, borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=39, fg='#B0B0B0', bg='#FFFFFF', justify=tk.LEFT, anchor='w')
+    songTitleTemp.grid(row=0,column=0, sticky = "nsew", padx=(0,50))  
     tagsTemp = tk.Label(splitGridTemp, bg='#FFFFFF',  borderwidth=0, relief='flat', justify='left')
     #first row
     popVarTemp = tk.StringVar()
@@ -399,33 +407,87 @@ def showEntryPage(recievedData):
     lofiTagTemp = CTkCheckBox(tagsTemp, text="lofi", font=CTkFont(family='Space Grotesk', size=13), border_width=1, corner_radius=0, checkbox_height=20, checkbox_width=20, variable=lofiVarTemp, onvalue='lofi', offvalue='NULL', hover=False, fg_color='#000000')
     lofiTagTemp.deselect()
     lofiTagTemp.grid(row=1, column=2, sticky='w')
-    tagsTemp.grid(row=2, column=0, sticky='w', pady=(15,0))
+
+    if popVarTempValue != 'None':
+        popTagTemp.select()
+    if hiphopVarTempValue != 'None':
+        hiphopTagTemp.select()
+    if indieVarTempValue != 'None':
+        indieTagTemp.select()
+    if kpopVarTempValue != 'None':
+        kpopTagTemp.select()
+    if explicitVarTempValue != 'None':
+        explicitTagTemp.select()
+    if inhouseVarTempValue != 'None':
+        inhouseTagTemp.select()
+    if lofiVarTempValue != 'None':
+        lofiTagTemp.select()
+
+    popTagTemp.configure(state=tk.DISABLED)
+    hiphopTagTemp.configure(state=tk.DISABLED)
+    indieTagTemp.configure(state=tk.DISABLED)
+    kpopTagTemp.configure(state=tk.DISABLED)
+    explicitTagTemp.configure(state=tk.DISABLED)
+    inhouseTagTemp.configure(state=tk.DISABLED)
+    lofiTagTemp.configure(state=tk.DISABLED)
+    print(ArtworkImageLocationTempValue)
+        
+    def saveFile(initialDirectory):
+        destinationDirectory = filedialog.askdirectory()
+    
+        fileName = os.path.basename(initialDirectory)
+        
+        destinationFilePath = os.path.join(destinationDirectory, fileName)
+        
+        shutil.copy(initialDirectory, destinationFilePath)
+
+    tagsTemp.grid(row=1, column=0, sticky='w', pady=(15,0))
     importsGridTemp = tk.Label(splitGridTemp, bg='#FFFFFF',  borderwidth=0, relief='flat', justify='left')
     ##
-    importArtworkImageTemp = tk.Button(importsGridTemp, image=newPhotoTemp, anchor='sw', bg='#FFFFFF',fg='#B0B0B0', relief='solid', borderwidth=1, activebackground='#FFFFFF',activeforeground='#B0B0B0', cursor='hand2', justify=tk.LEFT)
+    importArtworkImageTemp = tk.Button(importsGridTemp, image=newPhotoTemp, anchor='sw', bg='#FFFFFF',fg='#B0B0B0', relief='solid', borderwidth=1, activebackground='#FFFFFF',activeforeground='#B0B0B0', justify=tk.LEFT)
     importArtworkImageTemp.grid(row=0, column=0, sticky='news', padx=(0,20))
     importsGridInsideTemp = tk.Label(importsGridTemp, bg='#FFFFFF',  borderwidth=0, relief='flat', justify='right')
     ##
-    importSongTemp = tk.Button(importsGridInsideTemp, text="import song", font='"Space Grotesk" 13', anchor='sw', bg='#FFFFFF',fg='#B0B0B0', relief='solid', borderwidth=1, activebackground='#FFFFFF',activeforeground='#B0B0B0',  cursor='hand2', justify=tk.LEFT, height=3)
+    importSongTemp = tk.Button(importsGridInsideTemp, text=songShortenedLocationTemp, font='"Space Grotesk" 13', anchor='sw', bg='#FFFFFF',fg='#B0B0B0', relief='solid', borderwidth=1, activebackground='#FFFFFF',activeforeground='#B0B0B0',  justify=tk.LEFT, height=3, wraplength=210)
     importSongTemp.grid(row=0,column=0, sticky='news', pady=(0,19))
+    importSongTemp.image = songShortenedLocationTemp
+
     ##
-    addMiscFilesTemp = tk.Label(importsGridInsideTemp, text=addMiscFilesTempValue  ,borderwidth=1, relief='solid', font='"Space Grotesk" 13', fg='#B0B0B0')
+    addMiscFilesTemp = tk.Label(importsGridInsideTemp, text=addMiscFilesTempValue, borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=21, fg='#B0B0B0', bg='#FFFFFF', justify=tk.LEFT, anchor='w')
     addMiscFilesTemp.grid(row=1,column=0, sticky = "nsew")  
     importsGridInsideTemp.grid(row=0, column=1, padx=(10,0), sticky='e')
-    importsGridTemp.grid(row=3, column=0, sticky='w', pady=(20,0), rowspan=3)
+    importsGridTemp.grid(row=2, column=0, sticky='w', pady=(20,0), rowspan=3)
+
+    downloadImage = Image.open('download image.png')
+    resizedDownloadImage = downloadImage.resize((60,17))
+    resizedDownloadImagePhotoImage = ImageTk.PhotoImage(resizedDownloadImage)
+
+    downloadSong = Image.open('download song.png')
+    resizedDownloadSong = downloadSong.resize((50,17))
+    resizedDownloadSongPhotoImage = ImageTk.PhotoImage(resizedDownloadSong)
+
+    imageAndSongGridTemp = tk.Label(splitGridTemp, bg='#FFFFFF',  borderwidth=0, relief='flat', justify='left')
+
+    downloadArtworkButton = tk.Button(imageAndSongGridTemp, image=resizedDownloadImagePhotoImage, anchor='nw', bg='#FFFFFF',fg='#B0B0B0', relief='flat', borderwidth=0, activebackground='#FFFFFF',activeforeground='#B0B0B0', cursor='hand2', justify=tk.LEFT, command=lambda:saveFile(ArtworkImageLocationTempValue))
+    downloadArtworkButton.grid(row=0, column=0, sticky='w', padx=(0,105))
+    downloadArtworkButton.image = resizedDownloadImagePhotoImage
+
+    downloadSongButton = tk.Button(imageAndSongGridTemp, image=resizedDownloadSongPhotoImage, anchor='nw', bg='#FFFFFF',fg='#B0B0B0', relief='flat', borderwidth=0, activebackground='#FFFFFF',activeforeground='#B0B0B0', cursor='hand2', justify=tk.LEFT, command=lambda:saveFile(importSongTempValue))
+    downloadSongButton.grid(row=0, column=1, sticky='w', padx=5)
+    downloadSongButton.image = resizedDownloadSongPhotoImage
+
+    imageAndSongGridTemp.grid(row=5, column=0, sticky='news', pady=10)
 
     #col2
-    releaseDateTemp = tk.Label(splitGridTemp, text=releaseDateTempValue, borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=35, fg='#B0B0B0')
-    releaseDateTemp.grid(row=1,column=1, sticky = "nsew")
-    performedByTemp = tk.Label(splitGridTemp, text=performedByTempValue  ,borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=35, fg='#B0B0B0')
-    performedByTemp.grid(row=3,column=1, sticky = "nsew", pady=(20,0))
-    writtenByTemp = tk.Label(splitGridTemp, text=writtenByTempValue  ,borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=35, fg='#B0B0B0')
-    writtenByTemp.grid(row=4,column=1, sticky = "nsew", pady=(15,0))
-    prodByTemp = tk.Label(splitGridTemp, text=prodByTempValue  ,borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=35, fg='#B0B0B0')
-    prodByTemp.grid(row=5,column=1, sticky = "nsew", pady=(15,0))
+    releaseDateTemp = tk.Label(splitGridTemp, text=releaseDateTempValue, borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=38, fg='#B0B0B0', bg='#FFFFFF', justify=tk.LEFT, anchor='w')
+    releaseDateTemp.grid(row=0,column=1, sticky = "nsew")
+    performedByTemp = tk.Label(splitGridTemp, text=performedByTempValue, borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=38, fg='#B0B0B0', bg='#FFFFFF', justify=tk.LEFT, anchor='w')
+    performedByTemp.grid(row=2,column=1, sticky = "nsew", pady=(20,0))
+    writtenByTemp = tk.Label(splitGridTemp, text=writtenByTempValue, borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=38, fg='#B0B0B0', bg='#FFFFFF', justify=tk.LEFT, anchor='w')
+    writtenByTemp.grid(row=3,column=1, sticky = "nsew", pady=(15,0))
+    prodByTemp = tk.Label(splitGridTemp, text=prodByTempValue, borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=38, fg='#B0B0B0', bg='#FFFFFF', justify=tk.LEFT, anchor='w')
+    prodByTemp.grid(row=4,column=1, sticky = "nsew", pady=(15,0))
 
-    saveReleaseTemp = tk.Button(splitGridTemp, font='"Space Grotesk" 13', bg='#FFFFFF', text='save release', relief='flat', activebackground='#FFFFFF', borderwidth=0, cursor='hand2')
-    saveReleaseTemp.grid(row= 6, column=1, pady=(30,0), sticky='e')
     splitGridTemp.grid(row=1, column=0, sticky='ew')
 
     

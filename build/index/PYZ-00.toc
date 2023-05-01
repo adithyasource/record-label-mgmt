@@ -1,4 +1,4 @@
-('C:\\Users\\getsg\\Documents\\GitHub\\music mgmt\\build\\index\\PYZ-00.pyz',
+('C:\\Users\\getsg\\Documents\\GitHub\\music-mgmt\\build\\index\\PYZ-00.pyz',
  [('PIL',
    'C:\\Users\\getsg\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\site-packages\\PIL\\__init__.py',
    'PYMODULE'),
