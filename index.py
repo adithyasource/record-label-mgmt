@@ -9,9 +9,8 @@ from customtkinter import CTkFont
 import io
 import shutil
 import os
+import webbrowser
 
-
-# app frame
 window = tk.Tk()
 window.title('MIMIC Internal Mgmt')
 window.geometry('985x450')
@@ -21,11 +20,11 @@ window.configure(bg='#FFFFFF')
 frame = tk.Frame(window, bg='#FFFFFF')
 frame2 = tk.Frame(window, bg='#FFFFFF')
 tempFrameForEntry = tk.Frame(window, bg='#FFFFFF')
+frameForTracking = tk.Frame(window, bg='#FFFFFF')
 set_appearance_mode('light')
 songLocation = ''
 
-
-for page in (frame, frame2, tempFrameForEntry):
+for page in (frame, frame2, tempFrameForEntry, frameForTracking):
     page.grid(row=0, column=0, sticky='nsew', padx=75, pady=7)
 
 tableCreateQuery = '''
@@ -45,13 +44,18 @@ tableCreateQuery = '''
             artworkLocation TEXT,
             songFile TEXT,
             miscFiles TEXT,
-            artworkImage BLOB
+            artworkImage BLOB,
+            youtubeLink TEXT,
+            spotifyLink TEXT
         )
         '''
 
 def askForImage():
     global getImage
-    getImage = filedialog.askopenfilenames(title='select artwork', filetypes=(('png', "*.png"), ("jpg", "*.jpg")))
+    while True:
+        getImage = filedialog.askopenfilenames(title='select artwork', filetypes=(('png', "*.png"), ("jpg", "*.jpg")))
+        if getImage:
+            break
     global imageLocation
     imageLocation = str(getImage)[2:-3]
 
@@ -97,7 +101,6 @@ def convertImageIntoBinary(photo):
         PhotoImage = file.read() 
     return PhotoImage
 
-
 def showPage(frame):
     frame.tkraise()
 
@@ -105,8 +108,6 @@ showPage(frame)
 
 def doShit(frame):
     #reading values
-
-
     
     songTitleValue = songTitle.get()
     releaseDateValue = releaseDate.get()
@@ -123,8 +124,6 @@ def doShit(frame):
     miscFilesText = addMiscFiles.get()
     error = False
 
-    
-
 
     if songTitleValue == "song title":
         error = True
@@ -138,6 +137,7 @@ def doShit(frame):
         error = True
     if miscFilesText == 'link to misc files':
         error = True
+    
 
     if popVarValue == "NULL":
         popVarValue = None
@@ -160,61 +160,63 @@ def doShit(frame):
     global isImageButtonClicked
 
     if isImageButtonClicked == False:
-        messagebox.showerror('internal error', 'include artwork')
+        messagebox.showwarning('internal error', 'include artwork')
     else:
         if isSongButtonClicked == False:
             songLocation = None
-            messagebox.showerror('internal error', 'include song')
+            messagebox.showwarning('internal error', 'include song')
         else:
             isSongButtonClicked == True
             songLocation = str(getSong)[2:-3]
             if error == True:
-                messagebox.showerror('internal error', 'update default values for text')
-            elif error == False:
-                conn = sqlite3.connect('data.db')
-                conn.execute(tableCreateQuery)
-                dataInsertQuery = '''
-                    INSERT INTO releaseData(songTitle, releaseDate, performedBy, writtenBy, prodBy, popTag, hiphopTag, indieTag, kpopTag, explicitTag, inhouseTag, lofiTag, artworkLocation, songFile, miscFiles, artworkImage) 
-                    VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', ?, ?, ?, ?)
-                    '''.format(songTitleValue, releaseDateValue, performedByValue, writtenByValue, prodByValue, popVarValue, hiphopVarValue, indieVarValue, kpopVarValue, explicitVarValue, inhouseVarValue, lofiVarValue)
-                cursor = conn.cursor()
-                for image in getImage:
-                    insertPhoto = convertImageIntoBinary(image)
-                    cursor.execute(dataInsertQuery, (imageLocation, songLocation, miscFilesText, insertPhoto))
-                conn.commit()
-                conn.close()
-                songTitle.delete(0, tk.END)
-                songTitle.insert(0, 'song title')
-                releaseDate.delete(0, tk.END)
-                releaseDate.insert(0, 'release date yyy/mm/dd')
-                performedBy.delete(0, tk.END)
-                performedBy.insert(0, 'performed by')
-                writtenBy.delete(0, tk.END)
-                writtenBy.insert(0, 'written by')
-                prodBy.delete(0, tk.END)
-                prodBy.insert(0, 'produced by')
-                addMiscFiles.delete(0, tk.END)
-                addMiscFiles.insert(0, 'link to misc files')
-                importArtworkImage.config(text='import artwork', image="", bg='#FFFFFF')
-                songLocation = None
-                isSongButtonClicked = False
-                isImageButtonClicked = False
-                popTag.deselect()
-                hiphopTag.deselect()
-                indieTag.deselect()
-                explicitTag.deselect()
-                kpopTag.deselect()
-                inhouseTag.deselect()
-                lofiTag.deselect()
-                addValuesToDB()
-                frame.tkraise()
-                importSong.config(text='import song')
+                messagebox.showwarning('internal error', 'update default values for text')
+                
+            else:
+                if not miscFilesText.startswith('https://'):
+                    messagebox.showwarning('internal error', 'misc files should be uploaded to a cloud drive and the web address should be stored')
+                else:
+                    conn = sqlite3.connect('data.db')
+                    conn.execute(tableCreateQuery)
+                    dataInsertQuery = '''
+                        INSERT INTO releaseData(songTitle, releaseDate, performedBy, writtenBy, prodBy, popTag, hiphopTag, indieTag, kpopTag, explicitTag, inhouseTag, lofiTag, artworkLocation, songFile, miscFiles, artworkImage) 
+                        VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', ?, ?, ?, ?)
+                        '''.format(songTitleValue, releaseDateValue, performedByValue, writtenByValue, prodByValue, popVarValue, hiphopVarValue, indieVarValue, kpopVarValue, explicitVarValue, inhouseVarValue, lofiVarValue)
+                    cursor = conn.cursor()
+                    for image in getImage:
+                        insertPhoto = convertImageIntoBinary(image)
+                        cursor.execute(dataInsertQuery, (imageLocation, songLocation, miscFilesText, insertPhoto))
+                    conn.commit()
+                    conn.close()
+                    songTitle.delete(0, tk.END)
+                    songTitle.insert(0, 'song title')
+                    releaseDate.delete(0, tk.END)
+                    releaseDate.insert(0, 'release date yyy/mm/dd')
+                    performedBy.delete(0, tk.END)
+                    performedBy.insert(0, 'performed by')
+                    writtenBy.delete(0, tk.END)
+                    writtenBy.insert(0, 'written by')
+                    prodBy.delete(0, tk.END)
+                    prodBy.insert(0, 'produced by')
+                    addMiscFiles.delete(0, tk.END)
+                    addMiscFiles.insert(0, 'link to misc files')
+                    importArtworkImage.config(text='import artwork', image="", bg='#FFFFFF')
+                    songLocation = None
+                    isSongButtonClicked = False
+                    isImageButtonClicked = False
+                    popTag.deselect()
+                    hiphopTag.deselect()
+                    indieTag.deselect()
+                    explicitTag.deselect()
+                    kpopTag.deselect()
+                    inhouseTag.deselect()
+                    lofiTag.deselect()
+                    addValuesToDB()
+                    frame.tkraise()
+                    importSong.config(text='import song')
     
     
 
 # PAGE 1 
-
-
 logo = tk.PhotoImage(file='mimic logo full.png')
 topLabel = tk.Label(frame, image=logo, anchor='w', bg='#FFFFFF')
 topLabel.grid(row=0, column=0, pady=(30,10), sticky = "ew", )
@@ -224,6 +226,10 @@ previousReleases = tk.Frame(frame, bg='#FFFFFF',  borderwidth=1, relief='solid',
 previousReleasesText = tk.Label(previousReleases, text='previous releases', font='"Space Grotesk" 13', anchor='w', padx=20, bg='#FFFFFF', foreground='#B0B0B0', pady=5)
 previousReleasesText.grid(row=0,column=0, sticky = "ew")  
 
+deleteImage = Image.open('delete button.png')
+resizedDeleteImage = deleteImage.resize((17,17))
+#
+resizedDeleteImagePhotoImage = ImageTk.PhotoImage(resizedDeleteImage)
 
 def addValuesToDB():
     conn = sqlite3.connect('data.db')
@@ -231,30 +237,155 @@ def addValuesToDB():
     cursor = conn.cursor()
     cursor.execute("SELECT songTitle from releaseData")
     fetchAllEntries = cursor.fetchall()
+    conn.commit()
     numberOfEntries = len(fetchAllEntries)
-
-    def createCommand(entry):
-        return lambda: showEntryPage(entry)
-
-    for i in range(numberOfEntries):
-        fetchEntry = fetchAllEntries[i]
-        fetchEntry = str(fetchEntry)[2:-3]
-        entry = tk.Button(previousReleases, text=fetchEntry, font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=20, pady=5, borderwidth=0, width=87, cursor='hand2', command=createCommand(fetchEntry))
-        entry.grid(row=i+1, column=0, sticky="ew")
+    
+    
     
 
-    conn.commit()
+    def createCommandForOpen(entry):
+        return lambda: showEntryPage(entry)
+
+    def createCommandForDelete(entry):
+        return lambda: deleteEntry(entry)
+
+    def createCommandForTracking(entry):
+        return lambda: addTrackingForEntry(entry)
+
+    def createCommandForSavingTracking(recievedData, trackYoutubeEntry, trackSpotifyEntry):
+        return lambda: saveTracking(recievedData, trackYoutubeEntry, trackSpotifyEntry)
+
+    def deleteEntry(recievedData):
+        deleteReleaseQuestion = tk.messagebox.askquestion('delete release', 'you sure you want to delete this release?', icon='warning')
+        if deleteReleaseQuestion == 'yes':
+            conn = sqlite3.connect('data.db')
+            cursor = conn.cursor()
+
+            deleteValuesFromTable = '''DELETE FROM releaseData WHERE songTitle = ?'''
+            cursor.execute(deleteValuesFromTable, (str(recievedData),))
+            conn.commit()
+            conn.close()
+            entry.destroy()
+            deleteButton.destroy()
+            addTrackingButton.destroy()
+            addValuesToDB()
+
+    def saveTracking(recievedData, trackYoutubeEntry, trackSpotifyEntry):
+        youtubeLinkValue = trackYoutubeEntry.get()
+        spotifyLinkValue = trackSpotifyEntry.get()  
+
+        errorTracking = False
+
+        if youtubeLinkValue == '':
+            errorTracking = True
+        if spotifyLinkValue == '':
+            errorTracking = True
+        if not youtubeLinkValue.startswith('https://www.youtube.com/watch?v'):
+            errorTracking = True
+        if not spotifyLinkValue.startswith('https://open.spotify.com/track'):
+            errorTracking = True
+        
+        if errorTracking == True:
+            messagebox.showwarning('internal error', 'links should be in proper format, for ex \n\nyoutube\nhttps://www.youtube.com/watch?v=dQw4w9WgXcQ\n\nspotify\nhttps://open.spotify.com/track/4PTG3Z6ehGkBFwjyb...')
+        else:
+            conn = sqlite3.connect('data.db')
+
+
+            addTrackingToTable = '''UPDATE releaseData SET youtubeLink = ?, spotifyLink = ? WHERE songTitle = ?'''
+            cursor = conn.cursor()
+            
+            cursor.execute(addTrackingToTable, (youtubeLinkValue, spotifyLinkValue, recievedData))
+
+
+            conn.commit()
+
+            conn.close()
+            frame.tkraise()
+            
+
+
+
+    def addTrackingForEntry(recievedData):
+        backButtonTracking = tk.Button(frameForTracking, text="< back", font='"Space Grotesk" 13',  anchor='w', bg='#FFFFFF', relief='flat', activebackground='#FFFFFF', borderwidth=0, command=lambda: [showPage(frame), addValuesToDB()], cursor='hand2', justify=tk.LEFT )
+        backButtonTracking.grid(row=0, column=0, pady=30, sticky='w')
+
+        songTitleTracking = tk.Label(frameForTracking, text=recievedData, relief='flat', font='"Space Grotesk" 13', width=39, fg='#000000', bg='#FFFFFF', justify=tk.LEFT, anchor='w')   
+        songTitleTracking.grid(row=1,column=0, sticky = "nsew", padx=(0,50))
+
+        trackingSection = tk.Label(frameForTracking, bg='#FFFFFF', activebackground='#FFFFFF')   
+
+        trackYoutubeText = tk.Label(trackingSection, text='start tracking for Youtube', relief='flat', font='"Space Grotesk" 13', width=0, fg='#B0B0B0', bg='#FFFFFF', justify=tk.LEFT, anchor='w')   
+        trackYoutubeText.grid(row=0,column=0, sticky = "nsew", padx=(0,7), pady=(10,0))
+
+        trackYoutubeEntry = tk.Entry(trackingSection,relief='solid', font='"Space Grotesk" 13', width=54, fg='#000000', bg='#FFFFFF', justify=tk.LEFT, borderwidth=1)   
+        trackYoutubeEntry.grid(row=0,column=1, sticky = "nsew", padx=(0,50), pady=(10,0))
+
+        trackSpotifyText = tk.Label(trackingSection, text='                                      Spotify', relief='flat', font='"Space Grotesk" 13', width=0, fg='#B0B0B0', bg='#FFFFFF', justify=tk.LEFT, anchor='w')   
+        trackSpotifyText.grid(row=1,column=0, sticky = "nsew", padx=(0,7), pady=(10,0))
+
+        trackSpotifyEntry = tk.Entry(trackingSection,relief='solid', font='"Space Grotesk" 13', width=54, fg='#000000', bg='#FFFFFF', justify=tk.LEFT, borderwidth=1)   
+        trackSpotifyEntry.grid(row=1,column=1, sticky = "nsew", padx=(0,50), pady=(10,0))
+
+              
+
+        saveRelease = tk.Button(trackingSection, font='"Space Grotesk" 13', bg='#FFFFFF', text='start tracking', relief='flat', activebackground='#FFFFFF', borderwidth=0, cursor='hand2', command=lambda: saveTracking(recievedData, trackYoutubeEntry, trackSpotifyEntry))
+        saveRelease.grid(row= 2, column=1, pady=(155,0), padx=(0,44), sticky='e')
+
+        
+
+
+        trackingSection.grid(row=2, column=0)
+        frameForTracking.tkraise()
+
+
+    if numberOfEntries == 0:
+        noReleasesText = tk.Label(previousReleases, text='there are no releases at the moment', font='"Space Grotesk" 13', anchor='w', padx=20, bg='#FFFFFF', foreground='#000000', pady=5)
+        noReleasesText.grid(row=1,column=0, sticky = "ew")  
+    else:
+        for i in range(numberOfEntries):
+            fetchEntry = fetchAllEntries[i]
+            fetchEntry = str(fetchEntry)[2:-3]
+            entry = tk.Button(previousReleases, text=fetchEntry, font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=20, pady=5, borderwidth=0, width=62, cursor='hand2', command=createCommandForOpen(fetchEntry))
+            entry.grid(row=i+1, column=0, sticky="w", pady=(0,3))
+            # width=87
+
+            addTrackingButton = tk.Button(previousReleases, text='add tracking', font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=14, pady=0, borderwidth=1, cursor='hand2', relief='solid', command=createCommandForTracking(fetchEntry))
+            addTrackingButton.grid(row=i+1, column=1, sticky='w', columnspan=2, padx=(20,0), pady=(0,3))
+            
+            cursor.execute("SELECT youtubeLink,spotifyLink from releaseData")
+            fetchTrackingLinks = cursor.fetchall()
+            conn.commit()
+            link1 = fetchTrackingLinks[i][0]
+            if link1 != None:
+                addTrackingButton.config(text='', borderwidth=0, state=tk.DISABLED, width=10)
+
+            deleteButton = tk.Button(previousReleases, image=resizedDeleteImagePhotoImage, cursor='hand2', relief='solid', borderwidth=1, background='#FFFFFF', activebackground='#FFFFFF', command=createCommandForDelete(fetchEntry), width=29, height=29)
+            deleteButton.image = resizedDeleteImagePhotoImage
+            deleteButton.grid(row=i+1, column=3, sticky='w', padx=(20,10), pady=(0,3))
+
+        
+
+
+    
+        
     conn.close()
+
 addValuesToDB()
 
 
+
+
 previousReleases.grid(row=2,column=0, sticky = "ew", pady=10)
+
 viewAnalytics = tk.Button(frame, text="view analytics", font='"Space Grotesk" 13', anchor='w', bg='#FFFFFF', relief='solid', borderwidth=1, activebackground='#FFFFFF', padx=20, cursor='hand2')
 viewAnalytics.grid(row=3, column=0, pady=10, sticky = "swe")
 
+
+
+
 # PAGE 2
-backButton = tk.Button(frame2, text="< back", font='"Space Grotesk" 13', width=100, anchor='w', bg='#FFFFFF', relief='flat', activebackground='#FFFFFF', borderwidth=0, command=lambda: showPage(frame), cursor='hand2' )
-backButton.grid(row=0, column=0, pady=30)
+backButton = tk.Button(frame2, text="< back", font='"Space Grotesk" 13',  anchor='w', bg='#FFFFFF', relief='flat', activebackground='#FFFFFF', borderwidth=0, command=lambda: showPage(frame), cursor='hand2', justify=tk.LEFT )
+backButton.grid(row=0, column=0, pady=30, sticky='w')
 splitGrid = tk.Label(frame2, bg='#FFFFFF',  borderwidth=0, relief='flat')
 #col1
 songTitle = tk.Entry(splitGrid, borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=35, fg='#B0B0B0')
@@ -340,17 +471,13 @@ def showEntryPage(recievedData):
     selectValuesFromTable = '''SELECT * FROM releaseData WHERE songTitle = ?'''
     cursor.execute(selectValuesFromTable, (str(recievedData),))
 
-
-    
-
-    
     fetchAllEntries = cursor.fetchall()
 
     conn.commit()
 
     conn.close()
 
-    songTitleTempValue, releaseDateTempValue, performedByTempValue, writtenByTempValue, prodByTempValue, popVarTempValue, hiphopVarTempValue, indieVarTempValue, kpopVarTempValue, explicitVarTempValue, inhouseVarTempValue, lofiVarTempValue, ArtworkImageLocationTempValue, importSongTempValue, addMiscFilesTempValue, importArtworkImageTempValue = fetchAllEntries[0]
+    songTitleTempValue, releaseDateTempValue, performedByTempValue, writtenByTempValue, prodByTempValue, popVarTempValue, hiphopVarTempValue, indieVarTempValue, kpopVarTempValue, explicitVarTempValue, inhouseVarTempValue, lofiVarTempValue, ArtworkImageLocationTempValue, importSongTempValue, addMiscFilesTempValue, importArtworkImageTempValue, youtubeLinkTemp, spotifyLinkTemp = fetchAllEntries[0]
     # photoTemp = Image.frombytes("RGBA", (140,140), importArtworkImageTempValue)
 
     # resizedPhotoTemp = photoTemp.resize((140, 140))
@@ -359,8 +486,8 @@ def showEntryPage(recievedData):
     maxLengthOfTextTemp = 45
     songShortenedLocationTemp = importSongTempValue[:maxLengthOfTextTemp] + "..." if len(importSongTempValue) > maxLengthOfTextTemp else importSongTempValue
 
-    maxLengthOfMiscTextTemp = 40
-    addMiscFilesTempValue = addMiscFilesTempValue[:maxLengthOfMiscTextTemp] + "..." if len(addMiscFilesTempValue) > maxLengthOfMiscTextTemp else addMiscFilesTempValue
+    maxLengthOfMiscTextTemp = 20
+    addMiscFilesTempValueShortened = addMiscFilesTempValue[:maxLengthOfMiscTextTemp] + "..." if len(addMiscFilesTempValue) > maxLengthOfMiscTextTemp else addMiscFilesTempValue
 
     stream = io.BytesIO(importArtworkImageTempValue)
 
@@ -370,8 +497,8 @@ def showEntryPage(recievedData):
     newPhotoTemp = ImageTk.PhotoImage(resizedPhoto)
 
     tempFrameForEntry.tkraise()
-    backButtonTemp = tk.Button(tempFrameForEntry, text="< back", font='"Space Grotesk" 13', width=100, anchor='w', bg='#FFFFFF', relief='flat', activebackground='#FFFFFF', borderwidth=0, cursor='hand2', command=lambda: showPage(frame))
-    backButtonTemp.grid(row=0, column=0, pady=30)
+    backButtonTemp = tk.Button(tempFrameForEntry, text="< back", font='"Space Grotesk" 13', anchor='w', bg='#FFFFFF', relief='flat', activebackground='#FFFFFF', borderwidth=0, cursor='hand2', command=lambda: showPage(frame))
+    backButtonTemp.grid(row=0, column=0, pady=30, sticky='w')
     splitGridTemp = tk.Label(tempFrameForEntry, bg='#FFFFFF',  borderwidth=0, relief='flat')
     #col1
     songTitleTemp = tk.Label(splitGridTemp, text=songTitleTempValue, borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=39, fg='#B0B0B0', bg='#FFFFFF', justify=tk.LEFT, anchor='w')
@@ -430,30 +557,34 @@ def showEntryPage(recievedData):
     explicitTagTemp.configure(state=tk.DISABLED)
     inhouseTagTemp.configure(state=tk.DISABLED)
     lofiTagTemp.configure(state=tk.DISABLED)
-    print(ArtworkImageLocationTempValue)
         
     def saveFile(initialDirectory):
-        destinationDirectory = filedialog.askdirectory()
-    
-        fileName = os.path.basename(initialDirectory)
-        
-        destinationFilePath = os.path.join(destinationDirectory, fileName)
-        
-        shutil.copy(initialDirectory, destinationFilePath)
+        if os.path.exists(initialDirectory):
+            destinationDirectory = filedialog.askdirectory()
+
+            fileName = os.path.basename(initialDirectory)
+            
+            destinationFilePath = os.path.join(destinationDirectory, fileName)
+            
+            shutil.copy(initialDirectory, destinationFilePath)
+        else:
+            messagebox.showwarning('internal error', 'it seems that the original file has been deleted from your pc. check your recycle bin or cloud saves to retrieve it')
+
+           
 
     tagsTemp.grid(row=1, column=0, sticky='w', pady=(15,0))
     importsGridTemp = tk.Label(splitGridTemp, bg='#FFFFFF',  borderwidth=0, relief='flat', justify='left')
     ##
-    importArtworkImageTemp = tk.Button(importsGridTemp, image=newPhotoTemp, anchor='sw', bg='#FFFFFF',fg='#B0B0B0', relief='solid', borderwidth=1, activebackground='#FFFFFF',activeforeground='#B0B0B0', justify=tk.LEFT)
+    importArtworkImageTemp = tk.Label(importsGridTemp, image=newPhotoTemp, anchor='c', bg='#FFFFFF',fg='#B0B0B0', relief='solid', borderwidth=1, activebackground='#FFFFFF',activeforeground='#B0B0B0', justify=tk.CENTER)
     importArtworkImageTemp.grid(row=0, column=0, sticky='news', padx=(0,20))
     importsGridInsideTemp = tk.Label(importsGridTemp, bg='#FFFFFF',  borderwidth=0, relief='flat', justify='right')
     ##
-    importSongTemp = tk.Button(importsGridInsideTemp, text=songShortenedLocationTemp, font='"Space Grotesk" 13', anchor='sw', bg='#FFFFFF',fg='#B0B0B0', relief='solid', borderwidth=1, activebackground='#FFFFFF',activeforeground='#B0B0B0',  justify=tk.LEFT, height=3, wraplength=210)
-    importSongTemp.grid(row=0,column=0, sticky='news', pady=(0,19))
+    importSongTemp = tk.Label(importsGridInsideTemp, text=songShortenedLocationTemp, font='"Space Grotesk" 13', anchor='sw', bg='#FFFFFF',fg='#B0B0B0', relief='solid', borderwidth=1, activebackground='#FFFFFF',activeforeground='#B0B0B0',  justify=tk.LEFT, height=3, wraplength=210)
+    importSongTemp.grid(row=0,column=0, sticky='news', pady=(0,18))
     importSongTemp.image = songShortenedLocationTemp
 
     ##
-    addMiscFilesTemp = tk.Label(importsGridInsideTemp, text=addMiscFilesTempValue, borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=21, fg='#B0B0B0', bg='#FFFFFF', justify=tk.LEFT, anchor='w')
+    addMiscFilesTemp = tk.Button(importsGridInsideTemp, text=addMiscFilesTempValueShortened, borderwidth=1, relief='solid', font='"Space Grotesk" 13', width=21, fg='#B0B0B0', bg='#FFFFFF', activebackground='#FFFFFF',activeforeground='#B0B0B0', justify=tk.LEFT, anchor='w', cursor='hand2', command=lambda: webbrowser.open(addMiscFilesTempValue))
     addMiscFilesTemp.grid(row=1,column=0, sticky = "nsew")  
     importsGridInsideTemp.grid(row=0, column=1, padx=(10,0), sticky='e')
     importsGridTemp.grid(row=2, column=0, sticky='w', pady=(20,0), rowspan=3)
@@ -489,13 +620,6 @@ def showEntryPage(recievedData):
     prodByTemp.grid(row=4,column=1, sticky = "nsew", pady=(15,0))
 
     splitGridTemp.grid(row=1, column=0, sticky='ew')
-
-    
-
-
-
-
-
 
 
 window.mainloop()
