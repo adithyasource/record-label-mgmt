@@ -231,6 +231,45 @@ resizedDeleteImage = deleteImage.resize((17,17))
 #
 resizedDeleteImagePhotoImage = ImageTk.PhotoImage(resizedDeleteImage)
 
+def saveTracking(recievedData, trackYoutubeEntry, trackSpotifyEntry):
+    youtubeLinkValue = trackYoutubeEntry.get()
+    spotifyLinkValue = trackSpotifyEntry.get()  
+
+    errorTracking = False
+
+    if youtubeLinkValue == '':
+        errorTracking = True
+    if spotifyLinkValue == '':
+        errorTracking = True
+    if not youtubeLinkValue.startswith('https://www.youtube.com/watch?v'):
+        errorTracking = True
+    if not spotifyLinkValue.startswith('https://open.spotify.com/track'):
+        errorTracking = True
+    
+    if errorTracking == True:
+        messagebox.showwarning('internal error', 'links should be in proper format, for ex \n\nyoutube\nhttps://www.youtube.com/watch?v=dQw4w9WgXcQ\n\nspotify\nhttps://open.spotify.com/track/4PTG3Z6ehGkBFwjyb...')
+    else:
+        conn = sqlite3.connect('data.db')
+
+
+        addTrackingToTable = '''UPDATE releaseData SET youtubeLink = ?, spotifyLink = ? WHERE songTitle = ?'''
+        cursor = conn.cursor()
+        
+        cursor.execute(addTrackingToTable, (youtubeLinkValue, spotifyLinkValue, recievedData))
+
+        
+        conn.commit()
+        cursor.execute("SELECT youtubeLink,spotifyLink from releaseData")
+        
+        fetchTrackingLinks = cursor.fetchall()
+        conn.commit()
+        conn.close()
+        frame.tkraise()
+        
+
+        addValuesToDB()
+
+
 def addValuesToDB():
     conn = sqlite3.connect('data.db')
     conn.execute(tableCreateQuery)
@@ -239,8 +278,6 @@ def addValuesToDB():
     fetchAllEntries = cursor.fetchall()
     conn.commit()
     numberOfEntries = len(fetchAllEntries)
-    
-    
     
 
     def createCommandForOpen(entry):
@@ -270,40 +307,6 @@ def addValuesToDB():
             addTrackingButton.destroy()
             addValuesToDB()
 
-    def saveTracking(recievedData, trackYoutubeEntry, trackSpotifyEntry):
-        youtubeLinkValue = trackYoutubeEntry.get()
-        spotifyLinkValue = trackSpotifyEntry.get()  
-
-        errorTracking = False
-
-        if youtubeLinkValue == '':
-            errorTracking = True
-        if spotifyLinkValue == '':
-            errorTracking = True
-        if not youtubeLinkValue.startswith('https://www.youtube.com/watch?v'):
-            errorTracking = True
-        if not spotifyLinkValue.startswith('https://open.spotify.com/track'):
-            errorTracking = True
-        
-        if errorTracking == True:
-            messagebox.showwarning('internal error', 'links should be in proper format, for ex \n\nyoutube\nhttps://www.youtube.com/watch?v=dQw4w9WgXcQ\n\nspotify\nhttps://open.spotify.com/track/4PTG3Z6ehGkBFwjyb...')
-        else:
-            conn = sqlite3.connect('data.db')
-
-
-            addTrackingToTable = '''UPDATE releaseData SET youtubeLink = ?, spotifyLink = ? WHERE songTitle = ?'''
-            cursor = conn.cursor()
-            
-            cursor.execute(addTrackingToTable, (youtubeLinkValue, spotifyLinkValue, recievedData))
-
-
-            conn.commit()
-
-            conn.close()
-            frame.tkraise()
-            
-
-
 
     def addTrackingForEntry(recievedData):
         backButtonTracking = tk.Button(frameForTracking, text="< back", font='"Space Grotesk" 13',  anchor='w', bg='#FFFFFF', relief='flat', activebackground='#FFFFFF', borderwidth=0, command=lambda: [showPage(frame), addValuesToDB()], cursor='hand2', justify=tk.LEFT )
@@ -328,8 +331,8 @@ def addValuesToDB():
 
               
 
-        saveRelease = tk.Button(trackingSection, font='"Space Grotesk" 13', bg='#FFFFFF', text='start tracking', relief='flat', activebackground='#FFFFFF', borderwidth=0, cursor='hand2', command=lambda: saveTracking(recievedData, trackYoutubeEntry, trackSpotifyEntry))
-        saveRelease.grid(row= 2, column=1, pady=(155,0), padx=(0,44), sticky='e')
+        saveTrackingButton = tk.Button(trackingSection, font='"Space Grotesk" 13', bg='#FFFFFF', text='start tracking', relief='flat', activebackground='#FFFFFF', borderwidth=0, cursor='hand2', command=lambda: saveTracking(recievedData, trackYoutubeEntry, trackSpotifyEntry))
+        saveTrackingButton.grid(row= 2, column=1, pady=(155,0), padx=(0,44), sticky='e')
 
         
 
@@ -337,36 +340,38 @@ def addValuesToDB():
         trackingSection.grid(row=2, column=0)
         frameForTracking.tkraise()
 
-
     if numberOfEntries == 0:
         noReleasesText = tk.Label(previousReleases, text='there are no releases at the moment', font='"Space Grotesk" 13', anchor='w', padx=20, bg='#FFFFFF', foreground='#000000', pady=5)
         noReleasesText.grid(row=1,column=0, sticky = "ew")  
+        addTrackingButton = tk.Label(text='', background='#FFFFFF', foreground='#FFFFFF')
+        deleteButton = tk.Label(text='', background='#FFFFFF', foreground='#FFFFFF')
     else:
         for i in range(numberOfEntries):
             fetchEntry = fetchAllEntries[i]
             fetchEntry = str(fetchEntry)[2:-3]
             entry = tk.Button(previousReleases, text=fetchEntry, font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=20, pady=5, borderwidth=0, width=62, cursor='hand2', command=createCommandForOpen(fetchEntry))
             entry.grid(row=i+1, column=0, sticky="w", pady=(0,3))
-            # width=87
-
-            addTrackingButton = tk.Button(previousReleases, text='add tracking', font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=14, pady=0, borderwidth=1, cursor='hand2', relief='solid', command=createCommandForTracking(fetchEntry))
-            addTrackingButton.grid(row=i+1, column=1, sticky='w', columnspan=2, padx=(20,0), pady=(0,3))
-            
             cursor.execute("SELECT youtubeLink,spotifyLink from releaseData")
             fetchTrackingLinks = cursor.fetchall()
             conn.commit()
             link1 = fetchTrackingLinks[i][0]
             if link1 != None:
-                addTrackingButton.config(text='', borderwidth=0, state=tk.DISABLED, width=10)
+                addTrackingButton = tk.LabelFrame(previousReleases, font='"Space Grotesk" 11', bg='#FFFFFF', padx=14, pady=0, borderwidth=0, relief='flat', width=12, height=2)
 
+                youtubeAnalytics = tk.Label(addTrackingButton, font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=14, pady=0, borderwidth=0, relief='flat', foreground='#FE0404')
+                youtubeAnalytics.grid(row=0, column=0)
+
+                spotifyAnalytics = tk.Label(addTrackingButton, font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=14, pady=0, borderwidth=0, relief='flat', foreground='#1DD05D')
+                spotifyAnalytics.grid(row=0, column=1)
+
+                addTrackingButton.grid(row=i+1, column=1, sticky='w', columnspan=2, padx=(20,0), pady=(0,3))
+            else:
+                addTrackingButton = tk.Button(previousReleases, text='add tracking', font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=14, pady=0, borderwidth=1, cursor='hand2', relief='solid', command=createCommandForTracking(fetchEntry))
+                addTrackingButton.grid(row=i+1, column=1, sticky='w', columnspan=2, padx=(20,0), pady=(0,3))
+            
             deleteButton = tk.Button(previousReleases, image=resizedDeleteImagePhotoImage, cursor='hand2', relief='solid', borderwidth=1, background='#FFFFFF', activebackground='#FFFFFF', command=createCommandForDelete(fetchEntry), width=29, height=29)
             deleteButton.image = resizedDeleteImagePhotoImage
             deleteButton.grid(row=i+1, column=3, sticky='w', padx=(20,10), pady=(0,3))
-
-        
-
-
-    
         
     conn.close()
 
