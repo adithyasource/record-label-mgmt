@@ -307,6 +307,7 @@ def addValuesToDB():
 
     def createCommandForOpen(entry):
         return lambda: showEntryPage(entry)
+    
 
     def createCommandForDeleteWithAnalytics(entry):
         return lambda: deleteEntryWithAnalytics(entry)
@@ -346,7 +347,8 @@ def addValuesToDB():
             youtubeAnalytics.destroy()
             spotifyAnalytics.destroy()
             
-            addValuesToDB()
+        
+            print('i am deleting entry with analytics')
 
     def deleteEntryWithoutAnalytics(recievedData):
         deleteReleaseQuestion = tk.messagebox.askquestion('delete release', 'you sure you want to delete this release?', icon='warning')
@@ -361,8 +363,19 @@ def addValuesToDB():
             entry.destroy()
             deleteButton.destroy()
             addTrackingButton.destroy()
-            
-            addValuesToDB()
+            entry.destroy()
+            deleteButton.destroy()
+            addTrackingButton.destroy()
+            entry.destroy()
+            deleteButton.destroy()
+            addTrackingButton.destroy()
+            entry.destroy()
+            deleteButton.destroy()
+            addTrackingButton.destroy()
+            entry.destroy()
+            deleteButton.destroy()
+            addTrackingButton.destroy()
+            print(' i am deleteing entry withoutanalytics')
 
 
     def addTrackingForEntry(recievedData):
@@ -386,7 +399,7 @@ def addValuesToDB():
         trackSpotifyEntry = tk.Entry(trackingSection,relief='solid', font='"Space Grotesk" 13', width=54, fg='#000000', bg='#FFFFFF', justify=tk.LEFT, borderwidth=1)   
         trackSpotifyEntry.grid(row=1,column=1, sticky = "nsew", padx=(0,50), pady=(10,0))
 
-        saveTrackingButton = tk.Button(trackingSection, font='"Space Grotesk" 13', bg='#FFFFFF', text='start tracking', relief='flat', activebackground='#FFFFFF', borderwidth=0, cursor='hand2', command=lambda: saveTracking(recievedData, trackYoutubeEntry, trackSpotifyEntry))
+        saveTrackingButton = tk.Button(trackingSection, font='"Space Grotesk" 13', bg='#FFFFFF', text='start tracking', relief='flat', activebackground='#FFFFFF', borderwidth=0, cursor='hand2', command= createCommandForSavingTracking(recievedData, trackYoutubeEntry, trackSpotifyEntry))
         saveTrackingButton.grid(row= 2, column=1, pady=(155,0), padx=(0,44), sticky='e')
 
         
@@ -398,8 +411,8 @@ def addValuesToDB():
     totalSpotifyCount = 0
 
     if numberOfEntries == 0:
-        noReleasesText = tk.Label(previousReleases, text='there are no releases at the moment', font='"Space Grotesk" 13', anchor='w', padx=20, bg='#FFFFFF', foreground='#000000', pady=5)
-        noReleasesText.grid(row=1,column=0, sticky = "ew")  
+        entry = tk.Label(previousReleases, text='there are no releases at the moment', font='"Space Grotesk" 13', anchor='w', padx=20, bg='#FFFFFF', foreground='#000000', pady=5)
+        entry.grid(row=1,column=0, sticky = "ew")  
 
         addTrackingButton = tk.Label(previousReleases, font='"Space Grotesk" 11', bg='#FFFFFF', padx=14, pady=0, borderwidth=0, relief='flat', width=12, height=2, text='')
         addTrackingButton.grid(row=1, column=1, sticky='w', columnspan=2, padx=(20,0))
@@ -463,17 +476,26 @@ def addValuesToDB():
                 deleteButton = tk.Button(previousReleases, image=resizedDeleteImagePhotoImage, cursor='hand2', relief='solid', borderwidth=1, background='#FFFFFF', activebackground='#FFFFFF', command=createCommandForDeleteWithAnalytics(fetchEntry), width=29, height=29)
                 deleteButton.image = resizedDeleteImagePhotoImage
                 deleteButton.grid(row=i+1, column=3, sticky='w', padx=(20,10), pady=(0,3))
-                
+                print('im doing the first cmd')
 
             else:
                 entry = tk.Button(previousReleases, text=fetchEntry, font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=20, pady=5, borderwidth=0, width=62, cursor='hand2', command=createCommandForOpen(fetchEntry))
                 entry.grid(row=i+1, column=0, sticky="w", pady=(0,3))
                 
                 addTrackingButton = tk.Button(previousReleases, text='add tracking', font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=14, pady=0, borderwidth=1, cursor='hand2', relief='solid', command=createCommandForTracking(fetchEntry))
+                
+                # youtubeAnalytics = tk.Button(addTrackingButton, font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=15, pady=5, borderwidth=0, relief='flat', foreground='#FE0404', text='', width=5)
+                # youtubeAnalytics.grid(row=0, column=0, pady=(0,3))
+
+                # spotifyAnalytics = tk.Button(addTrackingButton, font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=15, pady=5, borderwidth=0, relief='flat', foreground='#1DD05D', text='', width=5)
+                # spotifyAnalytics.grid(row=0, column=1, pady=(0,3))
+
+                
                 addTrackingButton.grid(row=i+1, column=1, sticky='w', columnspan=2, padx=(20,0), pady=(0,3))
                 deleteButton = tk.Button(previousReleases, image=resizedDeleteImagePhotoImage, cursor='hand2', relief='solid', borderwidth=1, background='#FFFFFF', activebackground='#FFFFFF', command=createCommandForDeleteWithoutAnalytics(fetchEntry), width=29, height=29)
                 deleteButton.image = resizedDeleteImagePhotoImage
                 deleteButton.grid(row=i+1, column=3, sticky='w', padx=(20,10), pady=(0,3))
+                print('imdoin the second cmd')
             
                 
             
