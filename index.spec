@@ -8,7 +8,7 @@ a = Analysis(
     ['index.py'],
     pathex=[],
     binaries=[],
-    datas=[('C:/Users/getsg/AppData/Local/Programs/Python/Python311/Lib/site-packages/customtkinter', 'customtkinter/')],
+    datas=[('C:/Users/getsg/AppData/Local/Programs/Python/Python311/Lib/site-packages/customtkinter', 'customtkinter/'), ('%youtubeApiKey%', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
