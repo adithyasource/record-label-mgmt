@@ -9,7 +9,11 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[('C:/Users/getsg/AppData/Local/Programs/Python/Python311/Lib/site-packages/customtkinter', 'customtkinter/')],
+<<<<<<< HEAD
     hiddenimports=['googleapiclient'],
+=======
+    hiddenimports=[],
+>>>>>>> parent of 94b8fa5 (i think its working)
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
