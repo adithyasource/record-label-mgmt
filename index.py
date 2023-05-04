@@ -256,41 +256,7 @@ resizedDeleteImage = deleteImage.resize((17,17))
 #
 resizedDeleteImagePhotoImage = ImageTk.PhotoImage(resizedDeleteImage)
 
-def saveTracking(recievedData, trackYoutubeEntry, trackSpotifyEntry):
-    youtubeLinkValue = trackYoutubeEntry.get()
-    spotifyLinkValue = trackSpotifyEntry.get()  
 
-    errorTracking = False
-
-    if youtubeLinkValue == '':
-        errorTracking = True
-    if spotifyLinkValue == '':
-        errorTracking = True
-    if not youtubeLinkValue.startswith('https://www.youtube.com/watch?v'):
-        errorTracking = True
-    if not spotifyLinkValue.startswith('https://open.spotify.com/track'):
-        errorTracking = True
-    
-    if errorTracking == True:
-        messagebox.showwarning('internal error', 'links should be in proper format, for ex \n\nyoutube\nhttps://www.youtube.com/watch?v=dQw4w9WgXcQ\n\nspotify\nhttps://open.spotify.com/track/4PTG3Z6ehGkBFwjyb...')
-    else:
-        conn = sqlite3.connect('data.db')
-
-
-        addTrackingToTable = '''UPDATE releaseData SET youtubeLink = ?, spotifyLink = ? WHERE songTitle = ?'''
-        cursor = conn.cursor()
-        
-        cursor.execute(addTrackingToTable, (youtubeLinkValue, spotifyLinkValue, recievedData))
-
-        
-        conn.commit()
-        cursor.execute("SELECT youtubeLink,spotifyLink from releaseData")
-        
-        fetchTrackingLinks = cursor.fetchall()
-        conn.commit()
-        conn.close()
-        frame.tkraise()
-        addValuesToDB()
 
 
 def addValuesToDB():
@@ -308,17 +274,12 @@ def addValuesToDB():
     def createCommandForOpen(entry):
         return lambda: showEntryPage(entry)
 
-    def createCommandForDeleteWithAnalytics(entry):
-        return lambda: deleteEntryWithAnalytics(entry)
-
-    def createCommandForDeleteWithoutAnalytics(entry):
-        return lambda: deleteEntryWithoutAnalytics(entry)
+    
 
     def createCommandForTracking(entry):
         return lambda: addTrackingForEntry(entry)
 
-    def createCommandForSavingTracking(recievedData, trackYoutubeEntry, trackSpotifyEntry):
-        return lambda: saveTracking(recievedData, trackYoutubeEntry, trackSpotifyEntry)
+    
     
     def createCommandForYoutubeButton(entry):
         return lambda: youtubeButton(entry)
@@ -329,40 +290,7 @@ def addValuesToDB():
         webbrowser.open(entry)
     def spotifyButton(entry):
         webbrowser.open(entry)
-
-    def deleteEntryWithAnalytics(recievedData):
-        deleteReleaseQuestion = tk.messagebox.askquestion('delete release', 'you sure you want to delete this release?', icon='warning')
-        if deleteReleaseQuestion == 'yes':
-            conn = sqlite3.connect('data.db')
-            cursor = conn.cursor()
-
-            deleteValuesFromTable = '''DELETE FROM releaseData WHERE songTitle = ?'''
-            cursor.execute(deleteValuesFromTable, (str(recievedData),))
-            conn.commit()
-            conn.close()
-            entry.destroy()
-            deleteButton.destroy()
-            addTrackingButton.destroy()
-            youtubeAnalytics.destroy()
-            spotifyAnalytics.destroy()
-            
-            addValuesToDB()
-
-    def deleteEntryWithoutAnalytics(recievedData):
-        deleteReleaseQuestion = tk.messagebox.askquestion('delete release', 'you sure you want to delete this release?', icon='warning')
-        if deleteReleaseQuestion == 'yes':
-            conn = sqlite3.connect('data.db')
-            cursor = conn.cursor()
-
-            deleteValuesFromTable = '''DELETE FROM releaseData WHERE songTitle = ?'''
-            cursor.execute(deleteValuesFromTable, (str(recievedData),))
-            conn.commit()
-            conn.close()
-            entry.destroy()
-            deleteButton.destroy()
-            addTrackingButton.destroy()
-            
-            addValuesToDB()
+    
 
 
     def addTrackingForEntry(recievedData):
@@ -409,7 +337,48 @@ def addValuesToDB():
 
     else:
         for i in range(numberOfEntries):
-            
+
+            def createCommandForDeleteWithAnalytics(entry):
+                return lambda: deleteEntryWithAnalytics(entry)
+
+            def createCommandForDeleteWithoutAnalytics(entry):
+                return lambda: deleteEntryWithoutAnalytics(entry)
+
+            def deleteEntryWithAnalytics(recievedData):
+                deleteReleaseQuestion = tk.messagebox.askquestion('delete release', 'you sure you want to delete this release?', icon='warning')
+                if deleteReleaseQuestion == 'yes':
+                    conn = sqlite3.connect('data.db')
+                    cursor = conn.cursor()
+
+                    deleteValuesFromTable = '''DELETE FROM releaseData WHERE songTitle = ?'''
+                    cursor.execute(deleteValuesFromTable, (str(recievedData),))
+                    conn.commit()
+                    conn.close()
+                    entry.destroy()
+                    deleteButton.destroy()
+                    addTrackingButton.destroy()
+                    youtubeAnalytics.destroy()
+                    spotifyAnalytics.destroy()
+                    
+                    addValuesToDB()
+
+
+            def deleteEntryWithoutAnalytics(recievedData):
+                deleteReleaseQuestion = tk.messagebox.askquestion('delete release', 'you sure you want to delete this release?', icon='warning')
+                if deleteReleaseQuestion == 'yes':
+                    conn = sqlite3.connect('data.db')
+                    cursor = conn.cursor()
+
+                    deleteValuesFromTable = '''DELETE FROM releaseData WHERE songTitle = ?'''
+                    cursor.execute(deleteValuesFromTable, (str(recievedData),))
+                    conn.commit()
+                    conn.close()
+                    entry.destroy()
+                    deleteButton.destroy()
+                    addTrackingButton.destroy()
+                    
+                    addValuesToDB()
+
             fetchEntry = fetchAllEntries[i]
             fetchEntry = str(fetchEntry)[2:-3]
             
@@ -466,6 +435,47 @@ def addValuesToDB():
                 
 
             else:
+                def createCommandForSavingTracking(recievedData, trackYoutubeEntry, trackSpotifyEntry):
+                    return lambda: saveTracking(recievedData, trackYoutubeEntry, trackSpotifyEntry)
+                def saveTracking(recievedData, trackYoutubeEntry, trackSpotifyEntry):
+                    entry.destroy()
+                    deleteButton.destroy()
+                    addTrackingButton.destroy()
+                    
+                    youtubeLinkValue = trackYoutubeEntry.get()
+                    spotifyLinkValue = trackSpotifyEntry.get()  
+
+                    errorTracking = False
+
+                    if youtubeLinkValue == '':
+                        errorTracking = True
+                    if spotifyLinkValue == '':
+                        errorTracking = True
+                    if not youtubeLinkValue.startswith('https://www.youtube.com/watch?v'):
+                        errorTracking = True
+                    if not spotifyLinkValue.startswith('https://open.spotify.com/track'):
+                        errorTracking = True
+                    
+                    if errorTracking == True:
+                        messagebox.showwarning('internal error', 'links should be in proper format, for ex \n\nyoutube\nhttps://www.youtube.com/watch?v=dQw4w9WgXcQ\n\nspotify\nhttps://open.spotify.com/track/4PTG3Z6ehGkBFwjyb...')
+                    else:
+                        conn = sqlite3.connect('data.db')
+
+
+                        addTrackingToTable = '''UPDATE releaseData SET youtubeLink = ?, spotifyLink = ? WHERE songTitle = ?'''
+                        cursor = conn.cursor()
+                        
+                        cursor.execute(addTrackingToTable, (youtubeLinkValue, spotifyLinkValue, recievedData))
+
+                        
+                        conn.commit()
+                        cursor.execute("SELECT youtubeLink,spotifyLink from releaseData")
+                        
+                        fetchTrackingLinks = cursor.fetchall()
+                        conn.commit()
+                        conn.close()
+                        frame.tkraise()
+                        addValuesToDB()
                 entry = tk.Button(previousReleases, text=fetchEntry, font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=20, pady=5, borderwidth=0, width=62, cursor='hand2', command=createCommandForOpen(fetchEntry))
                 entry.grid(row=i+1, column=0, sticky="w", pady=(0,3))
                 
