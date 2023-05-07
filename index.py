@@ -1,22 +1,30 @@
+import sqlite3
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
 import tkinter as tk
-from PIL import Image, ImageTk
 from tkinter import messagebox
 from tkinter import filedialog
-import sqlite3
+from tkinter.font import Font
+from PIL import Image, ImageTk
+
 from customtkinter import set_appearance_mode
 from customtkinter import CTkCheckBox
 from customtkinter import CTkFont
-import io
-import shutil
-import os
-import webbrowser
+
 from googleapiclient.discovery import build
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
-import matplotlib.pyplot as plt
+
 import configparser
-from tkinter.font import Font
+import webbrowser
 import socket
+import io
+import shutil
+import os
+import sys
+
 
 try:
     socket.create_connection(('8.8.8.8', 53))
@@ -24,12 +32,34 @@ try:
 except OSError:
     isInternetConnected = False
 
+def restart():
+    python = sys.executable
+    os.execl(python, python, *sys.argv)
+
 
 
 
 window = tk.Tk()
 window.title('MIMIC Internal Mgmt')
-window.geometry('985x450')
+# window.geometry('985x450')
+windowWidth = 985
+windowHeight = 450
+def onClosing():
+    global windowWidth, windowHeight
+    windowWidth = window.winfo_width()
+    windowHeight = window.winfo_height()
+    with open("windowSize.txt", "w") as f:
+        f.write(str(windowWidth) + "\n")
+        f.write(str(windowHeight) + "\n")
+    window.destroy()
+window.protocol("WM_DELETE_WINDOW", onClosing)
+try:
+    with open("windowSize.txt", "r") as f:
+        windowWidth = int(f.readline())
+        windowHeight = int(f.readline())
+except FileNotFoundError:
+    pass
+window.geometry(f"{windowWidth}x{windowHeight}")
 window.resizable(False, True)
 window.iconbitmap('mimic.ico')
 window.configure(bg='#FFFFFF')
@@ -41,6 +71,11 @@ frameForAnalytics = tk.Frame(window, bg='#FFFFFF')
 frameForError = tk.Frame(window, bg='#FFFFFF')
 set_appearance_mode('light')
 songLocation = ''
+
+
+
+
+
 
 if isInternetConnected == True:
     for page in (frame, frame2, tempFrameForEntry, frameForTracking, frameForAnalytics):
@@ -93,7 +128,8 @@ tableCreateQuery = '''
             miscFiles TEXT,
             artworkImage BLOB,
             youtubeLink TEXT,
-            spotifyLink TEXT
+            spotifyLink TEXT,
+            indexo INTEGER
         )
         '''
 
@@ -147,7 +183,10 @@ def showPage(frame):
 
 showPage(frame)
 
+indexo = 0
+
 def doShit(frame):
+    global indexo 
     songTitleValue = songTitle.get()
     releaseDateValue = releaseDate.get()
     performedByValue = performedBy.get()
@@ -212,16 +251,18 @@ def doShit(frame):
                 if not miscFilesText.startswith('https://'):
                     messagebox.showwarning('internal error', 'misc files should be uploaded to a cloud drive and the web address should be stored')
                 else:
+                    
+                    indexo += 1
                     conn = sqlite3.connect('data.db')
                     conn.execute(tableCreateQuery)
                     dataInsertQuery = '''
-                        INSERT INTO releaseData(songTitle, releaseDate, performedBy, writtenBy, prodBy, popTag, hiphopTag, indieTag, kpopTag, explicitTag, inhouseTag, lofiTag, artworkLocation, songFile, miscFiles, artworkImage) 
-                        VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', ?, ?, ?, ?)
-                        '''.format(songTitleValue, releaseDateValue, performedByValue, writtenByValue, prodByValue, popVarValue, hiphopVarValue, indieVarValue, kpopVarValue, explicitVarValue, inhouseVarValue, lofiVarValue)
+                        INSERT INTO releaseData(songTitle, releaseDate, performedBy, writtenBy, prodBy, popTag, hiphopTag, indieTag, kpopTag, explicitTag, inhouseTag, lofiTag, artworkLocation, songFile, miscFiles, artworkImage, indexo) 
+                        VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', ?, ?, ?, ?, ?)
+                        '''.format(songTitleValue, releaseDateValue, performedByValue, writtenByValue, prodByValue, popVarValue, hiphopVarValue, indieVarValue, kpopVarValue, explicitVarValue, inhouseVarValue, lofiVarValue, indexo)
                     cursor = conn.cursor()
                     for image in getImage:
                         insertPhoto = convertImageIntoBinary(image)
-                        cursor.execute(dataInsertQuery, (imageLocation, songLocation, miscFilesText, insertPhoto))
+                        cursor.execute(dataInsertQuery, (imageLocation, songLocation, miscFilesText, insertPhoto, indexo))
                     conn.commit()
                     conn.close()
                     songTitle.delete(0, tk.END)
@@ -305,6 +346,9 @@ def addValuesToDB():
 
 
     def addTrackingForEntry(recievedData):
+        entry.destroy()
+        deleteButton.destroy()
+        addTrackingButton.destroy()
         backButtonTracking = tk.Button(frameForTracking, text="< back", font='"Space Grotesk" 13',  anchor='w', bg='#FFFFFF', relief='flat', activebackground='#FFFFFF', borderwidth=0, command=lambda: [showPage(frame), addValuesToDB()], cursor='hand2', justify=tk.LEFT )
         backButtonTracking.grid(row=0, column=0, pady=30, sticky='w')
 
@@ -336,60 +380,78 @@ def addValuesToDB():
 
     global totalYoutubeCount
     global totalSpotifyCount
+    global numberOfEntriesWithAnalytics
+    numberOfEntriesWithAnalytics = 0
     totalYoutubeCount = 0
     totalSpotifyCount = 0
 
+
     if numberOfEntries == 0:
-        noReleasesText = tk.Label(previousReleases, text='there are no releases at the moment', font='"Space Grotesk" 13', anchor='w', padx=20, bg='#FFFFFF', foreground='#000000', pady=5)
-        noReleasesText.grid(row=1,column=0, sticky = "ew")  
+            noReleasesText = tk.Label(previousReleases, text='there are no releases at the moment', font='"Space Grotesk" 13', anchor='w', padx=20, bg='#FFFFFF', foreground='#000000', pady=5)
+            noReleasesText.grid(row=1,column=0, sticky = "ew")  
 
-        addTrackingButton = tk.Label(previousReleases, font='"Space Grotesk" 11', bg='#FFFFFF', padx=14, pady=0, borderwidth=0, relief='flat', width=0, height=2, text='')
-        addTrackingButton.grid(row=1, column=1, sticky='w', columnspan=2, padx=(20,0))
+            # addTrackingButton = tk.Label(previousReleases, font='"Space Grotesk" 11', bg='#FFFFFF', padx=14, pady=0, borderwidth=0, relief='flat', width=0, height=2, text='')
+            # addTrackingButton.grid(row=1, column=1, sticky='w', columnspan=2, padx=(20,0))
 
-        deleteButton = tk.Label(previousReleases, font='"Space Grotesk" 11', bg='#FFFFFF', padx=14, pady=0, borderwidth=0, relief='flat', width=0, height=2, text='')
-        deleteButton.grid(row=1, column=3, sticky='w', padx=(20,10))
-
+            # deleteButton = tk.Label(previousReleases, font='"Space Grotesk" 11', bg='#FFFFFF', padx=14, pady=0, borderwidth=0, relief='flat', width=0, height=2, text='')
+            # deleteButton.grid(row=1, column=3, sticky='w', padx=(20,10))
     else:
+
+                
         for i in range(numberOfEntries):
+
+            if numberOfEntries == 0:
+                noReleasesText = tk.Label(previousReleases, text='there are no releases at the moment', font='"Space Grotesk" 13', anchor='w', padx=20, bg='#FFFFFF', foreground='#000000', pady=5)
+                noReleasesText.grid(row=1,column=0, sticky = "ew")  
+
+                addTrackingButton = tk.Label(previousReleases, font='"Space Grotesk" 11', bg='#FFFFFF', padx=14, pady=0, borderwidth=0, relief='flat', width=0, height=2, text='')
+                addTrackingButton.grid(row=1, column=1, sticky='w', columnspan=2, padx=(20,0))
+
+                deleteButton = tk.Label(previousReleases, font='"Space Grotesk" 11', bg='#FFFFFF', padx=14, pady=0, borderwidth=0, relief='flat', width=0, height=2, text='')
+                deleteButton.grid(row=1, column=3, sticky='w', padx=(20,10))
 
             def createCommandForDeleteWithAnalytics(entry):
                 return lambda: deleteEntryWithAnalytics(entry)
-
-            def createCommandForDeleteWithoutAnalytics(entry):
-                return lambda: deleteEntryWithoutAnalytics(entry)
 
             def deleteEntryWithAnalytics(recievedData):
                 deleteReleaseQuestion = tk.messagebox.askquestion('delete release', 'you sure you want to delete this release?', icon='warning')
                 if deleteReleaseQuestion == 'yes':
                     conn = sqlite3.connect('data.db')
                     cursor = conn.cursor()
-
                     deleteValuesFromTable = '''DELETE FROM releaseData WHERE songTitle = ?'''
                     cursor.execute(deleteValuesFromTable, (str(recievedData),))
                     conn.commit()
                     conn.close()
-                    entry.destroy()
-                    deleteButton.destroy()
-                    addTrackingButton.destroy()
-                    youtubeAnalytics.destroy()
-                    spotifyAnalytics.destroy()
+                    restart()
+                    # entry.destroy()
+                    # deleteButton.destroy()
+                    # addTrackingButton.destroy()
+                    # youtubeAnalytics.destroy()
+                    # spotifyAnalytics.destroy()
                     
-                    addValuesToDB()
+                    # addValuesToDB()
+
+
+            def createCommandForDeleteWithoutAnalytics(entry):
+                return lambda: deleteEntryWithoutAnalytics(entry)
 
 
             def deleteEntryWithoutAnalytics(recievedData):
+
                 deleteReleaseQuestion = tk.messagebox.askquestion('delete release', 'you sure you want to delete this release?', icon='warning')
                 if deleteReleaseQuestion == 'yes':
                     conn = sqlite3.connect('data.db')
                     cursor = conn.cursor()
-
                     deleteValuesFromTable = '''DELETE FROM releaseData WHERE songTitle = ?'''
                     cursor.execute(deleteValuesFromTable, (str(recievedData),))
                     conn.commit()
                     conn.close()
-                    entry.destroy()
-                    deleteButton.destroy()
-                    addTrackingButton.destroy()
+                    restart()
+                    # entry.destroy()
+                    # deleteButton.destroy()
+                    # addTrackingButton.destroy()
+                    # addValuesToDB()
+                
                     
 
             fetchEntry = fetchAllEntries[i]
@@ -405,6 +467,7 @@ def addValuesToDB():
             spotifyLinkFetch = fetchTrackingLinks[i][1]
             
             if youtubeLinkFetch != None:
+                
                 entry = tk.Button(previousReleases, text=fetchEntry, font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=20, pady=5, borderwidth=0, width=62, cursor='hand2', command=createCommandForOpen(fetchEntry))
                 entry.grid(row=i+1, column=0, sticky="w", pady=(0,3))
 
@@ -417,8 +480,13 @@ def addValuesToDB():
                 )
                 youtubeResponse = youtubeRequest.execute()
                 youtubeViewCount = youtubeResponse['items'][0]['statistics']['viewCount']
-                
+
+
                 youtubeViewCount = int(youtubeViewCount)
+
+                
+
+
                 totalYoutubeCount = totalYoutubeCount + youtubeViewCount
 
                 youtubeViewCount = "{:,}".format(youtubeViewCount)
@@ -433,7 +501,7 @@ def addValuesToDB():
                 spotifySongPopularity = spotifyTrackInfo['popularity']
 
                 spotifySongPopularity = int(spotifySongPopularity)
-                totalSpotifyCount = totalSpotifyCount+spotifySongPopularity
+                totalSpotifyCount = totalSpotifyCount + spotifySongPopularity
 
                 addTrackingButton = tk.Label(previousReleases, font='"Space Grotesk" 11', bg='#FFFFFF', padx=14, pady=0, borderwidth=0, relief='flat', width=12, height=3, text='')
 
@@ -447,9 +515,11 @@ def addValuesToDB():
                 deleteButton = tk.Button(previousReleases, image=resizedDeleteImagePhotoImage, cursor='hand2', relief='solid', borderwidth=1, background='#FFFFFF', activebackground='#FFFFFF', command=createCommandForDeleteWithAnalytics(fetchEntry), width=29, height=29)
                 deleteButton.image = resizedDeleteImagePhotoImage
                 deleteButton.grid(row=i+1, column=3, sticky='w', padx=(20,15), pady=(0,3))
-                
+                numberOfEntriesWithAnalytics = numberOfEntriesWithAnalytics + 1
+
 
             else:
+
                 def createCommandForSavingTracking(recievedData, trackYoutubeEntry, trackSpotifyEntry):
                     return lambda: saveTracking(recievedData, trackYoutubeEntry, trackSpotifyEntry)
                 def saveTracking(recievedData, trackYoutubeEntry, trackSpotifyEntry):
@@ -492,18 +562,85 @@ def addValuesToDB():
                         frame.tkraise()
                         addValuesToDB()
 
+
+                
                 entry = tk.Button(previousReleases, text=fetchEntry, font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=20, pady=5, borderwidth=0, width=62, cursor='hand2', command=createCommandForOpen(fetchEntry))
                 entry.grid(row=i+1, column=0, sticky="w", pady=(0,3))
-                
+
+
                 addTrackingButton = tk.Button(previousReleases, text='add tracking', font='"Space Grotesk" 11', anchor='w', bg='#FFFFFF', padx=14, pady=0, borderwidth=1, cursor='hand2', relief='solid', command=createCommandForTracking(fetchEntry), activebackground='#FFFFFF')
                 addTrackingButton.grid(row=i+1, column=1, sticky='w', columnspan=2, padx=(20,0), pady=(0,3))
                 deleteButton = tk.Button(previousReleases, image=resizedDeleteImagePhotoImage, cursor='hand2', relief='solid', borderwidth=1, background='#FFFFFF', activebackground='#FFFFFF', command=createCommandForDeleteWithoutAnalytics(fetchEntry), width=29, height=29)
                 deleteButton.image = resizedDeleteImagePhotoImage
                 deleteButton.grid(row=i+1, column=3, sticky='w', padx=(20,10), pady=(0,3))
-    
-    print(totalYoutubeCount)
-    print(totalSpotifyCount)
+
+
+
+
+
+
     ### VIEW ANALYTICS PAGE
+
+
+    conn = sqlite3.connect('data.db')
+    cursor = conn.cursor()
+
+    selectValuesFromTableForAnalysis = '''SELECT songTitle,youtubeLink,spotifyLink FROM releaseData'''
+    cursor.execute(selectValuesFromTableForAnalysis)
+
+    # print(type(selectValuesFromTableForAnalysis))
+
+
+
+    fetchDataForAnalysis = cursor.fetchall()
+
+    conn.commit()
+
+    conn.close()
+
+
+    for j in range(len(fetchDataForAnalysis)):
+
+        songTitleForAnalysis = fetchDataForAnalysis[j][0]
+        youtubeLinkForAnalysis = fetchDataForAnalysis[j][1]
+        spotifyLinkForAnalysis = fetchDataForAnalysis[j][2]
+
+
+
+
+
+        youtubeVideoId = youtubeLinkForAnalysis.find("?v=") + len("?v=")
+        youtubeVideoId = youtubeLinkForAnalysis[youtubeVideoId:youtubeVideoId+11]
+        youtubeRequest = youtubeConnect.videos().list(
+            part='statistics',
+            id=youtubeVideoId
+        )
+        youtubeResponse = youtubeRequest.execute()
+        youtubeViewCount = youtubeResponse['items'][0]['statistics']['viewCount']
+        youtubeViewCount = int(youtubeViewCount)
+        youtubeViewCount = "{:,}".format(youtubeViewCount)
+
+        
+        spotifyTrackId = spotifyLinkForAnalysis.find("/track/") + len("/track/")
+        spotifyTrackId = spotifyLinkForAnalysis[spotifyTrackId:spotifyTrackId+22]
+        spotifyTrackInfo = sp.track(spotifyTrackId)
+        spotifySongPopularity = spotifyTrackInfo['popularity']
+        spotifySongPopularity = int(spotifySongPopularity)
+
+
+        print(songTitleForAnalysis)
+        print(youtubeViewCount)
+        print(spotifySongPopularity)
+
+
+        
+
+
+
+    # songTitleTemp, youtubeLinkTemp, spotifyLinkTemp = fetchDataForAnalysis[0]
+
+    # print(fetchDataForAnalysis)
+    # print(len(fetchDataForAnalysis))
 
     previousReleases.grid(row=2,column=0, sticky = "ew", pady=10)
 
@@ -523,10 +660,10 @@ def addValuesToDB():
     avgYoutubeViewsNumberWithCommas = 0
     avgSpotifyPopularityNumber = 0
 
-    if numberOfEntries != 0:
-        avgYoutubeViewsNumber = int(totalYoutubeCount/numberOfEntries)
+    if numberOfEntriesWithAnalytics != 0:
+        avgYoutubeViewsNumber = int(totalYoutubeCount/numberOfEntriesWithAnalytics)
         avgYoutubeViewsNumberWithCommas = "{:,}".format(avgYoutubeViewsNumber)
-        avgSpotifyPopularityNumber = int(totalSpotifyCount/numberOfEntries)
+        avgSpotifyPopularityNumber = int(totalSpotifyCount/numberOfEntriesWithAnalytics)
 
 
 
@@ -538,7 +675,22 @@ def addValuesToDB():
 
     avgSpotifyPopularity = tk.Label(frameForAnalytics, font='"Space Grotesk" 21', width=8, fg='#000000', bg='#FFFFFF', text=avgSpotifyPopularityNumber, anchor='e', padx=5, pady=5)
     avgSpotifyPopularity.grid(row=1,column=3, sticky = "nsew", padx=(0,40))  
+
+    print('avgyoutubeviews',avgYoutubeViewsNumberWithCommas)
+    print('avgspotifypopularity',avgSpotifyPopularityNumber)
+
 addValuesToDB()
+
+
+
+
+### VIEW ANALYTICS PAGE
+
+
+
+
+
+
 
 
 
@@ -643,7 +795,7 @@ def showEntryPage(recievedData):
 
     conn.close()
 
-    songTitleTempValue, releaseDateTempValue, performedByTempValue, writtenByTempValue, prodByTempValue, popVarTempValue, hiphopVarTempValue, indieVarTempValue, kpopVarTempValue, explicitVarTempValue, inhouseVarTempValue, lofiVarTempValue, ArtworkImageLocationTempValue, importSongTempValue, addMiscFilesTempValue, importArtworkImageTempValue, youtubeLinkTemp, spotifyLinkTemp = fetchAllEntries[0]
+    songTitleTempValue, releaseDateTempValue, performedByTempValue, writtenByTempValue, prodByTempValue, popVarTempValue, hiphopVarTempValue, indieVarTempValue, kpopVarTempValue, explicitVarTempValue, inhouseVarTempValue, lofiVarTempValue, ArtworkImageLocationTempValue, importSongTempValue, addMiscFilesTempValue, importArtworkImageTempValue, youtubeLinkTemp, spotifyLinkTemp, indexo = fetchAllEntries[0]
     # photoTemp = Image.frombytes("RGBA", (140,140), importArtworkImageTempValue)
     
 
