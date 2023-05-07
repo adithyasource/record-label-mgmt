@@ -1,13 +1,20 @@
 import sqlite3
 import numpy as np
 import pandas as pd
+import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from matplotlib.figure import Figure
+
+
 
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import filedialog
 from tkinter.font import Font
 from PIL import Image, ImageTk
+from tkinter import Toplevel
 
 from customtkinter import set_appearance_mode
 from customtkinter import CTkCheckBox
@@ -63,6 +70,7 @@ window.geometry(f"{windowWidth}x{windowHeight}")
 window.resizable(False, True)
 window.iconbitmap('mimic.ico')
 window.configure(bg='#FFFFFF')
+window.pack_propagate(False)
 frame = tk.Frame(window, bg='#FFFFFF')
 frame2 = tk.Frame(window, bg='#FFFFFF')
 tempFrameForEntry = tk.Frame(window, bg='#FFFFFF')
@@ -590,23 +598,19 @@ def addValuesToDB():
 
     # print(type(selectValuesFromTableForAnalysis))
 
-
-
     fetchDataForAnalysis = cursor.fetchall()
 
     conn.commit()
 
     conn.close()
 
+    analyticsDataForScatterPlot = []
 
     for j in range(len(fetchDataForAnalysis)):
 
         songTitleForAnalysis = fetchDataForAnalysis[j][0]
         youtubeLinkForAnalysis = fetchDataForAnalysis[j][1]
         spotifyLinkForAnalysis = fetchDataForAnalysis[j][2]
-
-
-
 
 
         youtubeVideoId = youtubeLinkForAnalysis.find("?v=") + len("?v=")
@@ -632,8 +636,12 @@ def addValuesToDB():
         print(youtubeViewCount)
         print(spotifySongPopularity)
 
+        analyticsDataForScatterPlot.append([songTitleForAnalysis, youtubeViewCount, spotifySongPopularity])
+    
 
-        
+
+
+
 
 
 
@@ -676,8 +684,58 @@ def addValuesToDB():
     avgSpotifyPopularity = tk.Label(frameForAnalytics, font='"Space Grotesk" 21', width=8, fg='#000000', bg='#FFFFFF', text=avgSpotifyPopularityNumber, anchor='e', padx=5, pady=5)
     avgSpotifyPopularity.grid(row=1,column=3, sticky = "nsew", padx=(0,40))  
 
+
+    def onCanvasClick(event):
+        fullScreenScatter = Toplevel()
+        fullScreenScatter.title('full screen plot')
+
+        fig = Figure(figsize=(12, 8), dpi=100)
+
+        ax = fig.add_subplot(111)
+        ax.scatter(dataFrameScatterPlot['youtube views'], dataFrameScatterPlot['spotify popularity'])
+        ax.set_xlabel('youtube views')
+        ax.set_ylabel('spotify popularity')
+
+        canvas = FigureCanvasTkAgg(fig, master=fullScreenScatter)
+        canvas.draw()
+        canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+        toolbar = NavigationToolbar2Tk(canvas, fullScreenScatter)
+        toolbar.update()
+        canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+        fullScreenScatter.attributes('-fullscreen', True)
+        fullScreenScatter.bind('<Escape>', lambda event: fullScreenScatter.destroy())
+
+
+
+    dataFrameScatterPlot = pd.DataFrame(analyticsDataForScatterPlot, columns=['song title', 'youtube views', 'spotify popularity'])
+
+    dataFrameScatterPlot.to_csv('analyticsData.csv')
+
+
+    fig = Figure(figsize=(6,4), dpi=70)
+    ax = fig.add_subplot(111)
+    ax.scatter(dataFrameScatterPlot['youtube views'], dataFrameScatterPlot['spotify popularity'])
+    ax.set_xlabel('youtube views')
+    ax.set_ylabel('spotify popularity')
+
+    fig.tight_layout()
+
+    canvas = FigureCanvasTkAgg(fig, master=frameForAnalytics)
+    canvas.get_tk_widget().grid(row=2, column=0, sticky='nw', columnspan=2)
+    canvas.mpl_connect('button_press_event', onCanvasClick)
+
+
+
+
+
     print('avgyoutubeviews',avgYoutubeViewsNumberWithCommas)
     print('avgspotifypopularity',avgSpotifyPopularityNumber)
+
+
+
+
 
 addValuesToDB()
 
