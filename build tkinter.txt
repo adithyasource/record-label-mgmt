@@ -1,0 +1,1 @@
+pyinstaller.exe --onedir -w -i mimic.ico --add-data "C:/Users/getsg/AppData/Local/Programs/Python/Python311/Lib/site-packages/customtkinter;customtkinter/" --hidden-import="pkg_resources.py2_warn" --hidden-import="googleapiclient" --hidden-import="apiclient" --noconfirm index.py
