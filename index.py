@@ -1,13 +1,12 @@
+# <--- Tkinter Imports --->
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import filedialog
-from tkinter.font import Font
 from PIL import Image, ImageTk
 from tkinter import Toplevel
+import tkinter.font as tkFont
 
-import sqlite3
-import pandas as pd
-
+# <--- MatPlotLib Imports --->
 import matplotlib
 
 matplotlib.use("TkAgg")
@@ -18,13 +17,14 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 from matplotlib.figure import Figure
 import matplotlib.cm as cm
 
-from customtkinter import set_appearance_mode
-from customtkinter import CTkCheckBox
-from customtkinter import CTkFont
-
+# <--- Google and Spotify API Imports --->
 from googleapiclient.discovery import build
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
+
+# <--- Other Imports --->
+import sqlite3
+import pandas as pd
 
 import configparser
 import webbrowser
@@ -34,52 +34,18 @@ import shutil
 import os
 import sys
 
-
-def restart():
-    python = sys.executable
-    os.execl(python, python, *sys.argv)
-
-
-# defines a restart function, to be used later
-
-window = tk.Tk()
-window.title("MIMIC Internal Mgmt")
-windowWidth = 985
-windowHeight = 450
 # creates the window for the app
+window = tk.Tk()
+window.title("Record Label MGMT")
 
-
-def onClosing():
-    global windowWidth, windowHeight
-    windowWidth = window.winfo_width()
-    windowHeight = window.winfo_height()
-    with open("windowSize.txt", "w") as f:
-        f.write(str(windowWidth) + "\n")
-        f.write(str(windowHeight) + "\n")
-    window.destroy()
-
-
-window.protocol("WM_DELETE_WINDOW", onClosing)
-# when called upon, it checks the size of the window and then stores it to a textfile windowSize.txt
-
-
-try:
-    with open("windowSize.txt", "r") as f:
-        windowWidth = int(f.readline())
-        windowHeight = int(f.readline())
-except FileNotFoundError:
-    pass
-# runs at startup and reads the textfile windowSize.txt and sets the size of the window to it
-
-
-window.geometry(f"{windowWidth}x{windowHeight}")
+# configuring the window for the app
+window.geometry("985x470")
 window.resizable(False, True)
-window.iconbitmap("mimic.ico")
+window.iconbitmap("logo.ico")
 window.configure(bg="#FFFFFF")
 window.pack_propagate(False)
-set_appearance_mode("light")
-# configuring the window for the app
 
+# creating the different frames / pages that the app will use through its runtime
 frame = tk.Frame(window, bg="#FFFFFF")
 frame2 = tk.Frame(window, bg="#FFFFFF")
 tempFrameForEntry = tk.Frame(window, bg="#FFFFFF")
@@ -87,20 +53,29 @@ frameForTracking = tk.Frame(window, bg="#FFFFFF")
 frameForAnalytics = tk.Frame(window, bg="#FFFFFF")
 frameForError = tk.Frame(window, bg="#FFFFFF")
 frameForErrorNoAnalytics = tk.Frame(window, bg="#FFFFFF")
-# creating the different frames / pages that the app will use through its runtime
 
 
-songLocation = ""
+# <------------------------------------>
+# <----------- Misc Functions --------->
+# <------------------------------------>
+
+#  the following functions are required for small interactions in the program
 
 
+# when called and inputted with the name of a frame, it will display that frame on the screen
+def showPage(frame):
+    frame.tkraise()
+
+
+# checks if pc is connected to the internet by pinging google's dns and returns bool value
 try:
     socket.create_connection(("8.8.8.8", 53))
     isInternetConnected = True
 except OSError:
     isInternetConnected = False
-# check if pc is connected to the internet by pinging google's dns and returns bool value
 
-
+# checks bool value for internet connection and if it is disconnected, it will display a page
+# with an error, or else, it will continue to set up the page
 if isInternetConnected == True:
     for page in (
         frame,
@@ -132,6 +107,8 @@ if isInternetConnected == True:
     )
     # connects to spotify's public api using spotipy library
 else:
+    # <-------- Create Error Page For No Internet ----------->
+
     frameForError.grid(row=0, column=0, sticky="nsew", padx=75, pady=7)
 
     iconLogo = tk.PhotoImage(file="icon logo.png")
@@ -162,38 +139,18 @@ else:
         fg="#000000",
     )
     connectionErrorText.grid(row=2, column=0, sticky="ew")
-# check bool value for internet connection and if it is disconnected, it will display a page with an error, or else, it will continue to set up the page
 
 
-tableCreateQuery = """
-        CREATE TABLE IF NOT EXISTS releaseData (
-            songTitle TEXT,
-            releaseDate DATE,
-            performedBy TEXT,
-            writtenBy TEXT,
-            prodBy TEXT,
-            popTag TEXT,
-            hiphopTag TEXT,
-            indieTag TEXT,
-            kpopTag TEXT,
-            explicitTag TEXT,
-            inhouseTag TEXT,
-            lofiTag TEXT,
-            artworkLocation TEXT,
-            songFile TEXT,
-            miscFiles TEXT,
-            artworkImage BLOB,
-            youtubeLink TEXT,
-            spotifyLink TEXT
-        )
-        """
-# preset integer containing sql command for creation of database
-
-isSongButtonClicked = False
-isImageButtonClicked = False
+# defining a restart function, which is called when user deletes an entry
+# this allows the ui to refresh and rebuild itself
+def restart():
+    python = sys.executable
+    os.execl(python, python, *sys.argv)
 
 
 def askForImage():
+    # when called it shows the user a pop up window asking to select a png or jpg image
+    # file. upon gettingit, it will store its location and resize it to display inside the preview
     global getImage
     while True:
         getImage = filedialog.askopenfilenames(
@@ -219,9 +176,9 @@ def askForImage():
         isImageButtonClicked = True
 
 
-# when called it shows the user a pop up window asking to select a png or jpg image file. upon gettingit, it will store its location and resize it to display inside the preview
-
-
+# when called it shows the user a pop up window asking to select a mp3 or wav
+# song file. upon getting it, it will store the location of it and also shorten its
+# location in order to preview it in its button
 def askForSong():
     global getSong
     while True:
@@ -243,23 +200,12 @@ def askForSong():
     importSong.config(text=shortenedLocation)
 
 
-# when called it shows the user a pop up window asking to select a mp3 or wav song file. upon getting it, it will store the location of it and also shorten its location in order to preview it in its button
-
-
+# when called and inputted with an image, it will convert the image's file into a binary string
+# this way it can be imported into tkinter's user interface
 def convertImageIntoBinary(photo):
     with open(photo, "rb") as file:
         PhotoImage = file.read()
     return PhotoImage
-
-
-# when called and inputted with an image, it will convert the image's file into a binary string
-
-
-def showPage(frame):
-    frame.tkraise()
-
-
-# when called and inputted with the name of a frame, it will display that frame on the screen
 
 
 def abbreviateNumber(value):
@@ -274,7 +220,362 @@ def abbreviateNumber(value):
         return str(value)
 
 
+# contains sql command for creation of database
+tableCreateQuery = """
+        CREATE TABLE IF NOT EXISTS releaseData (
+            songTitle TEXT,
+            releaseDate DATE,
+            performedBy TEXT,
+            writtenBy TEXT,
+            prodBy TEXT,
+            popTag TEXT,
+            hiphopTag TEXT,
+            indieTag TEXT,
+            kpopTag TEXT,
+            explicitTag TEXT,
+            inhouseTag TEXT,
+            lofiTag TEXT,
+            artworkLocation TEXT,
+            songFile TEXT,
+            miscFiles TEXT,
+            artworkImage BLOB,
+            youtubeLink TEXT,
+            spotifyLink TEXT
+        )
+        """
+
+songLocation = ""
+isSongButtonClicked = False
+isImageButtonClicked = False
+deleteImage = Image.open("delete button.png")
+resizedDeleteImage = deleteImage.resize((17, 17))
+resizedDeleteImagePhotoImage = ImageTk.PhotoImage(resizedDeleteImage)
+
+
+# <---------------------------------->
+# <------ Main UI is Built Here ----->
+# <---------------------------------->
+
+
+# <------------ HomePage ------------>
+
+# this is the page which the user is brought to at startup
+
 showPage(frame)
+logo = tk.PhotoImage(file="testflight logo full.png")
+topLabel = tk.Label(frame, image=logo, anchor="w", bg="#FFFFFF")
+topLabel.grid(
+    row=0,
+    column=0,
+    pady=(30, 10),
+    sticky="ew",
+)
+createRelease = tk.Button(
+    frame,
+    text="create release",
+    font='"Space Grotesk" 13',
+    width=78,
+    anchor="w",
+    bg="#FFFFFF",
+    relief="solid",
+    borderwidth=1,
+    activebackground="#FFFFFF",
+    padx=20,
+    command=lambda: showPage(frame2),
+    cursor="hand2",
+)
+createRelease.grid(row=1, column=0, pady=10, sticky="ew")
+previousReleases = tk.Frame(
+    frame, bg="#FFFFFF", borderwidth=1, relief="solid", width=78
+)
+previousReleasesText = tk.Label(
+    previousReleases,
+    text="previous releases",
+    font='"Space Grotesk" 13',
+    anchor="w",
+    padx=20,
+    bg="#FFFFFF",
+    foreground="#B0B0B0",
+    pady=5,
+)
+previousReleasesText.grid(row=0, column=0, sticky="ew")
+
+# <---------- Create Release Page ----------->
+
+# this is the ui for the create release page, when a user clicks on the page to
+# add a release, this ui will be generated
+# it is based on a grid system with seperate rows and colums for each element
+
+backButton = tk.Button(
+    frame2,
+    text="< back",
+    font='"Space Grotesk" 13',
+    anchor="w",
+    bg="#FFFFFF",
+    relief="flat",
+    activebackground="#FFFFFF",
+    borderwidth=0,
+    command=lambda: showPage(frame),
+    cursor="hand2",
+    justify=tk.LEFT,
+)
+backButton.grid(row=0, column=0, pady=30, sticky="w")
+splitGrid = tk.Label(frame2, bg="#FFFFFF", borderwidth=0, relief="flat")
+
+# Column 1
+songTitle = tk.Entry(
+    splitGrid,
+    borderwidth=1,
+    relief="solid",
+    font='"Space Grotesk" 13',
+    width=35,
+    fg="#B0B0B0",
+)
+songTitle.grid(row=1, column=0, sticky="nsew", padx=(0, 50))
+songTitle.insert(0, "song title")
+tags = tk.Label(splitGrid, bg="#FFFFFF", borderwidth=0, relief="flat", justify="left")
+
+# Row 1
+popVar = tk.StringVar()
+popTag = tk.Checkbutton(
+    tags,
+    text="pop",
+    onvalue="pop",
+    offvalue="NULL",
+    bg="#FFFFFF",
+    variable=popVar,
+    fg="#000000",
+    font=tkFont.Font(family="Space Grotesk", size=10),
+    activebackground="#FFFFFF",
+    relief=tk.FLAT,
+    cursor="hand2",
+)
+popTag.deselect()
+popTag.grid(row=0, column=0, sticky="w")
+hiphopVar = tk.StringVar()
+
+hiphopTag = tk.Checkbutton(
+    tags,
+    text="hiphop",
+    onvalue="hiphop",
+    offvalue="NULL",
+    bg="#FFFFFF",
+    variable=hiphopVar,
+    fg="#000000",
+    font=tkFont.Font(family="Space Grotesk", size=10),
+    activebackground="#FFFFFF",
+    relief=tk.FLAT,
+    cursor="hand2",
+)
+hiphopTag.deselect()
+hiphopTag.grid(row=0, column=1, sticky="w")
+indieVar = tk.StringVar()
+
+indieTag = tk.Checkbutton(
+    tags,
+    text="indie",
+    onvalue="indie",
+    offvalue="NULL",
+    bg="#FFFFFF",
+    variable=indieVar,
+    fg="#000000",
+    font=tkFont.Font(family="Space Grotesk", size=10),
+    activebackground="#FFFFFF",
+    relief=tk.FLAT,
+    cursor="hand2",
+)
+indieTag.deselect()
+indieTag.grid(row=0, column=2, sticky="w")
+kpopVar = tk.StringVar()
+
+kpopTag = tk.Checkbutton(
+    tags,
+    text="kpop",
+    onvalue="kpop",
+    offvalue="NULL",
+    bg="#FFFFFF",
+    variable=kpopVar,
+    fg="#000000",
+    font=tkFont.Font(family="Space Grotesk", size=10),
+    activebackground="#FFFFFF",
+    relief=tk.FLAT,
+    cursor="hand2",
+)
+kpopTag.deselect()
+kpopTag.grid(row=0, column=3, sticky="w")
+# Row 2
+explicitVar = tk.StringVar()
+
+explicitTag = tk.Checkbutton(
+    tags,
+    text="explicit",
+    onvalue="explicit",
+    offvalue="NULL",
+    bg="#FFFFFF",
+    variable=explicitVar,
+    fg="#000000",
+    font=tkFont.Font(family="Space Grotesk", size=10),
+    activebackground="#FFFFFF",
+    relief=tk.FLAT,
+    cursor="hand2",
+)
+explicitTag.deselect()
+explicitTag.grid(row=1, column=0, sticky="w")
+inhouseVar = tk.StringVar()
+
+inhouseTag = tk.Checkbutton(
+    tags,
+    text="inhouse",
+    onvalue="inhouse",
+    offvalue="NULL",
+    bg="#FFFFFF",
+    variable=inhouseVar,
+    fg="#000000",
+    font=tkFont.Font(family="Space Grotesk", size=10),
+    activebackground="#FFFFFF",
+    relief=tk.FLAT,
+    cursor="hand2",
+)
+inhouseTag.deselect()
+inhouseTag.grid(row=1, column=1, sticky="w")
+lofiVar = tk.StringVar()
+
+lofiTag = tk.Checkbutton(
+    tags,
+    text="lofi",
+    onvalue="lofi",
+    offvalue="NULL",
+    bg="#FFFFFF",
+    variable=lofiVar,
+    fg="#000000",
+    font=tkFont.Font(family="Space Grotesk", size=10),
+    activebackground="#FFFFFF",
+    relief=tk.FLAT,
+    cursor="hand2",
+)
+lofiTag.deselect()
+lofiTag.grid(row=1, column=2, sticky="w")
+tags.grid(row=2, column=0, sticky="w", pady=(15, 0))
+importsGrid = tk.Label(
+    splitGrid, bg="#FFFFFF", borderwidth=0, relief="flat", justify="left"
+)
+##
+importArtworkImage = tk.Button(
+    importsGrid,
+    text="import artwork",
+    font='"Space Grotesk" 13',
+    anchor="sw",
+    bg="#FFFFFF",
+    fg="#B0B0B0",
+    relief="solid",
+    borderwidth=1,
+    activebackground="#FFFFFF",
+    activeforeground="#B0B0B0",
+    cursor="hand2",
+    justify=tk.LEFT,
+    command=askForImage,
+)
+importArtworkImage.grid(row=0, column=0, sticky="news", padx=(0, 20))
+importsGridInside = tk.Label(
+    importsGrid, bg="#FFFFFF", borderwidth=0, relief="flat", justify="right"
+)
+##
+importSong = tk.Button(
+    importsGridInside,
+    text="import song",
+    font='"Space Grotesk" 13',
+    anchor="sw",
+    bg="#FFFFFF",
+    fg="#B0B0B0",
+    relief="solid",
+    borderwidth=1,
+    activebackground="#FFFFFF",
+    activeforeground="#B0B0B0",
+    cursor="hand2",
+    justify=tk.LEFT,
+    height=3,
+    command=askForSong,
+    wraplength=210,
+)
+importSong.grid(row=0, column=0, sticky="news", pady=(0, 19))
+##
+addMiscFiles = tk.Entry(
+    importsGridInside,
+    borderwidth=1,
+    relief="solid",
+    font='"Space Grotesk" 13',
+    fg="#B0B0B0",
+)
+addMiscFiles.grid(row=1, column=0, sticky="nsew")
+addMiscFiles.insert(0, "link to misc files")
+importsGridInside.grid(row=0, column=1, padx=(10, 0), sticky="e")
+importsGrid.grid(row=3, column=0, sticky="w", pady=(20, 0), rowspan=3)
+
+# Column 2
+releaseDate = tk.Entry(
+    splitGrid,
+    borderwidth=1,
+    relief="solid",
+    font='"Space Grotesk" 13',
+    width=35,
+    fg="#B0B0B0",
+)
+releaseDate.grid(row=1, column=1, sticky="nsew")
+releaseDate.insert(0, "release date yyyy/mm/dd")
+performedBy = tk.Entry(
+    splitGrid,
+    borderwidth=1,
+    relief="solid",
+    font='"Space Grotesk" 13',
+    width=35,
+    fg="#B0B0B0",
+)
+performedBy.grid(row=3, column=1, sticky="nsew", pady=(20, 0))
+performedBy.insert(0, "performed by")
+writtenBy = tk.Entry(
+    splitGrid,
+    borderwidth=1,
+    relief="solid",
+    font='"Space Grotesk" 13',
+    width=35,
+    fg="#B0B0B0",
+)
+writtenBy.grid(row=4, column=1, sticky="nsew", pady=(15, 0))
+writtenBy.insert(0, "written by")
+prodBy = tk.Entry(
+    splitGrid,
+    borderwidth=1,
+    relief="solid",
+    font='"Space Grotesk" 13',
+    width=35,
+    fg="#B0B0B0",
+)
+prodBy.grid(row=5, column=1, sticky="nsew", pady=(15, 0))
+prodBy.insert(0, "produced by")
+
+saveReleaseButton = tk.Button(
+    splitGrid,
+    font='"Space Grotesk" 13',
+    bg="#FFFFFF",
+    text="save release",
+    relief="flat",
+    activebackground="#FFFFFF",
+    command=lambda: [saveRelease(frame), convertImageIntoBinary(photo)],
+    borderwidth=0,
+    cursor="hand2",
+)
+saveReleaseButton.grid(row=6, column=1, pady=(20, 0), sticky="e")
+splitGrid.grid(row=1, column=0, sticky="ew")
+# when the save release button is clicked, the saveRelease function is called
+
+
+# <----------------------------->
+# <------ Main Functions ------->
+# <----------------------------->
+
+# these are the functions that handle the majority of interactions
+# in our program, they are responsible for handling data
+# and responding to the user's requests
 
 
 def saveRelease(frame):
@@ -424,51 +725,6 @@ def saveRelease(frame):
                     # deletes all the added values from the input fields and replaces it back with the default text, preparing it for the next interaction
 
 
-logo = tk.PhotoImage(file="mimic logo full.png")
-topLabel = tk.Label(frame, image=logo, anchor="w", bg="#FFFFFF")
-topLabel.grid(
-    row=0,
-    column=0,
-    pady=(30, 10),
-    sticky="ew",
-)
-createRelease = tk.Button(
-    frame,
-    text="create release",
-    font='"Space Grotesk" 13',
-    width=78,
-    anchor="w",
-    bg="#FFFFFF",
-    relief="solid",
-    borderwidth=1,
-    activebackground="#FFFFFF",
-    padx=20,
-    command=lambda: showPage(frame2),
-    cursor="hand2",
-)
-createRelease.grid(row=1, column=0, pady=10, sticky="ew")
-previousReleases = tk.Frame(
-    frame, bg="#FFFFFF", borderwidth=1, relief="solid", width=78
-)
-previousReleasesText = tk.Label(
-    previousReleases,
-    text="previous releases",
-    font='"Space Grotesk" 13',
-    anchor="w",
-    padx=20,
-    bg="#FFFFFF",
-    foreground="#B0B0B0",
-    pady=5,
-)
-previousReleasesText.grid(row=0, column=0, sticky="ew")
-# lays out the elements for the main page
-
-deleteImage = Image.open("delete button.png")
-resizedDeleteImage = deleteImage.resize((17, 17))
-resizedDeleteImagePhotoImage = ImageTk.PhotoImage(resizedDeleteImage)
-# creates an image element for the delete button to be used later on
-
-
 def addValuesToDB():
     frame.tkraise()
     conn = sqlite3.connect("data.db")
@@ -508,6 +764,9 @@ def addValuesToDB():
         entry.destroy()
         deleteButton.destroy()
         addTrackingButton.destroy()
+
+        # <-------- Create Add Tracking Info Page ----------->
+
         backButtonTracking = tk.Button(
             frameForTracking,
             text="< back",
@@ -822,7 +1081,6 @@ def addValuesToDB():
 
             else:
                 # if no tracking is found it will create an add analytics button and do the following
-
                 def createCommandForSavingTracking(
                     recievedData, trackYoutubeEntry, trackSpotifyEntry
                 ):
@@ -954,6 +1212,9 @@ def addValuesToDB():
 
     if numberOfEntriesWithAnalytics == 0:
         # if the page is opened and there is no tracking data added yet, it will create a page showing an error
+
+        # <-------- Create Error Page For No Analytics ----------->
+
         backButton = tk.Button(
             frameForErrorNoAnalytics,
             text="< back",
@@ -1405,278 +1666,6 @@ def addValuesToDB():
 addValuesToDB()
 
 
-### ADD RELEASES PAGE
-
-# this is the ui for the add releases page, when a user clicks on the page to add a release, this ui will be generated
-# it is based on a grid system with seperate rows and colums for each element
-
-backButton = tk.Button(
-    frame2,
-    text="< back",
-    font='"Space Grotesk" 13',
-    anchor="w",
-    bg="#FFFFFF",
-    relief="flat",
-    activebackground="#FFFFFF",
-    borderwidth=0,
-    command=lambda: showPage(frame),
-    cursor="hand2",
-    justify=tk.LEFT,
-)
-backButton.grid(row=0, column=0, pady=30, sticky="w")
-splitGrid = tk.Label(frame2, bg="#FFFFFF", borderwidth=0, relief="flat")
-# col1
-songTitle = tk.Entry(
-    splitGrid,
-    borderwidth=1,
-    relief="solid",
-    font='"Space Grotesk" 13',
-    width=35,
-    fg="#B0B0B0",
-)
-songTitle.grid(row=1, column=0, sticky="nsew", padx=(0, 50))
-songTitle.insert(0, "song title")
-tags = tk.Label(splitGrid, bg="#FFFFFF", borderwidth=0, relief="flat", justify="left")
-# first row
-popVar = tk.StringVar()
-popTag = CTkCheckBox(
-    tags,
-    text="pop",
-    font=CTkFont(family="Space Grotesk", size=13),
-    border_width=1,
-    corner_radius=0,
-    checkbox_height=20,
-    checkbox_width=20,
-    variable=popVar,
-    onvalue="pop",
-    offvalue="NULL",
-    hover=False,
-    fg_color="#000000",
-)
-popTag.deselect()
-popTag.grid(row=0, column=0, sticky="w")
-hiphopVar = tk.StringVar()
-hiphopTag = CTkCheckBox(
-    tags,
-    text="hip hop",
-    font=CTkFont(family="Space Grotesk", size=13),
-    border_width=1,
-    corner_radius=0,
-    checkbox_height=20,
-    checkbox_width=20,
-    variable=hiphopVar,
-    onvalue="hiphop",
-    offvalue="NULL",
-    hover=False,
-    fg_color="#000000",
-)
-hiphopTag.deselect()
-hiphopTag.grid(row=0, column=1, sticky="w")
-indieVar = tk.StringVar()
-indieTag = CTkCheckBox(
-    tags,
-    text="indie",
-    font=CTkFont(family="Space Grotesk", size=13),
-    border_width=1,
-    corner_radius=0,
-    checkbox_height=20,
-    checkbox_width=20,
-    variable=indieVar,
-    onvalue="indie",
-    offvalue="NULL",
-    hover=False,
-    fg_color="#000000",
-)
-indieTag.deselect()
-indieTag.grid(row=0, column=2, sticky="w")
-kpopVar = tk.StringVar()
-kpopTag = CTkCheckBox(
-    tags,
-    text="kpop",
-    font=CTkFont(family="Space Grotesk", size=13),
-    border_width=1,
-    corner_radius=0,
-    checkbox_height=20,
-    checkbox_width=20,
-    variable=kpopVar,
-    onvalue="kpop",
-    offvalue="NULL",
-    hover=False,
-    fg_color="#000000",
-)
-kpopTag.deselect()
-kpopTag.grid(row=0, column=3, sticky="w")
-# second row
-explicitVar = tk.StringVar()
-explicitTag = CTkCheckBox(
-    tags,
-    text="explicit",
-    font=CTkFont(family="Space Grotesk", size=13),
-    border_width=1,
-    corner_radius=0,
-    checkbox_height=20,
-    checkbox_width=20,
-    variable=explicitVar,
-    onvalue="explicit",
-    offvalue="NULL",
-    hover=False,
-    fg_color="#000000",
-)
-explicitTag.deselect()
-explicitTag.grid(row=1, column=0, sticky="w")
-inhouseVar = tk.StringVar()
-inhouseTag = CTkCheckBox(
-    tags,
-    text="inhouse",
-    font=CTkFont(family="Space Grotesk", size=13),
-    border_width=1,
-    corner_radius=0,
-    checkbox_height=20,
-    checkbox_width=20,
-    variable=inhouseVar,
-    onvalue="inhouse",
-    offvalue="NULL",
-    hover=False,
-    fg_color="#000000",
-)
-inhouseTag.deselect()
-inhouseTag.grid(row=1, column=1, sticky="w")
-lofiVar = tk.StringVar()
-lofiTag = CTkCheckBox(
-    tags,
-    text="lofi",
-    font=CTkFont(family="Space Grotesk", size=13),
-    border_width=1,
-    corner_radius=0,
-    checkbox_height=20,
-    checkbox_width=20,
-    variable=lofiVar,
-    onvalue="lofi",
-    offvalue="NULL",
-    hover=False,
-    fg_color="#000000",
-)
-lofiTag.deselect()
-lofiTag.grid(row=1, column=2, sticky="w")
-tags.grid(row=2, column=0, sticky="w", pady=(15, 0))
-importsGrid = tk.Label(
-    splitGrid, bg="#FFFFFF", borderwidth=0, relief="flat", justify="left"
-)
-##
-importArtworkImage = tk.Button(
-    importsGrid,
-    text="import artwork",
-    font='"Space Grotesk" 13',
-    anchor="sw",
-    bg="#FFFFFF",
-    fg="#B0B0B0",
-    relief="solid",
-    borderwidth=1,
-    activebackground="#FFFFFF",
-    activeforeground="#B0B0B0",
-    cursor="hand2",
-    justify=tk.LEFT,
-    command=askForImage,
-)
-importArtworkImage.grid(row=0, column=0, sticky="news", padx=(0, 20))
-importsGridInside = tk.Label(
-    importsGrid, bg="#FFFFFF", borderwidth=0, relief="flat", justify="right"
-)
-##
-importSong = tk.Button(
-    importsGridInside,
-    text="import song",
-    font='"Space Grotesk" 13',
-    anchor="sw",
-    bg="#FFFFFF",
-    fg="#B0B0B0",
-    relief="solid",
-    borderwidth=1,
-    activebackground="#FFFFFF",
-    activeforeground="#B0B0B0",
-    cursor="hand2",
-    justify=tk.LEFT,
-    height=3,
-    command=askForSong,
-    wraplength=210,
-)
-importSong.grid(row=0, column=0, sticky="news", pady=(0, 19))
-##
-addMiscFiles = tk.Entry(
-    importsGridInside,
-    borderwidth=1,
-    relief="solid",
-    font='"Space Grotesk" 13',
-    fg="#B0B0B0",
-)
-addMiscFiles.grid(row=1, column=0, sticky="nsew")
-addMiscFiles.insert(0, "link to misc files")
-importsGridInside.grid(row=0, column=1, padx=(10, 0), sticky="e")
-importsGrid.grid(row=3, column=0, sticky="w", pady=(20, 0), rowspan=3)
-
-# col2
-releaseDate = tk.Entry(
-    splitGrid,
-    borderwidth=1,
-    relief="solid",
-    font='"Space Grotesk" 13',
-    width=35,
-    fg="#B0B0B0",
-)
-releaseDate.grid(row=1, column=1, sticky="nsew")
-releaseDate.insert(0, "release date yyyy/mm/dd")
-performedBy = tk.Entry(
-    splitGrid,
-    borderwidth=1,
-    relief="solid",
-    font='"Space Grotesk" 13',
-    width=35,
-    fg="#B0B0B0",
-)
-performedBy.grid(row=3, column=1, sticky="nsew", pady=(20, 0))
-performedBy.insert(0, "performed by")
-writtenBy = tk.Entry(
-    splitGrid,
-    borderwidth=1,
-    relief="solid",
-    font='"Space Grotesk" 13',
-    width=35,
-    fg="#B0B0B0",
-)
-writtenBy.grid(row=4, column=1, sticky="nsew", pady=(15, 0))
-writtenBy.insert(0, "written by")
-prodBy = tk.Entry(
-    splitGrid,
-    borderwidth=1,
-    relief="solid",
-    font='"Space Grotesk" 13',
-    width=35,
-    fg="#B0B0B0",
-)
-prodBy.grid(row=5, column=1, sticky="nsew", pady=(15, 0))
-prodBy.insert(0, "produced by")
-
-saveReleaseButton = tk.Button(
-    splitGrid,
-    font='"Space Grotesk" 13',
-    bg="#FFFFFF",
-    text="save release",
-    relief="flat",
-    activebackground="#FFFFFF",
-    command=lambda: [saveRelease(frame), convertImageIntoBinary(photo)],
-    borderwidth=0,
-    cursor="hand2",
-)
-saveReleaseButton.grid(row=6, column=1, pady=(20, 0), sticky="e")
-splitGrid.grid(row=1, column=0, sticky="ew")
-# when the save release button is clicked, the saveRelease function is called and that is when the rest of the previously created commands run
-
-
-### VIEW RELEASES PAGE
-
-
-# after a release is created an it is viewable in the previous releases section, the user is able to click on the name of the song to view everything that
-# they had previously entered. all the values are greyed out and thus they are not able to edit anything
 def showEntryPage(recievedData):
     conn = sqlite3.connect("data.db")
     cursor = conn.cursor()
@@ -1686,7 +1675,6 @@ def showEntryPage(recievedData):
     conn.commit()
     conn.close()
     # it will connect to the database again and get all the values in the database related to the name of the song clicked
-
     (
         songTitleTempValue,
         releaseDateTempValue,
@@ -1724,6 +1712,14 @@ def showEntryPage(recievedData):
     resizedPhoto = image.resize((140, 140))
     global newPhotoTemp
     newPhotoTemp = ImageTk.PhotoImage(resizedPhoto)
+
+    # <-------- View Already Added Releases Page ----------->
+
+    # after a release is created an it is viewable in the previous releases section,
+    # the user is able to click on the name of the song to view everything that
+    # they had previously entered. all the values are greyed out and thus they are
+    # not able to edit anything
+
     tempFrameForEntry.tkraise()
     backButtonTemp = tk.Button(
         tempFrameForEntry,
@@ -1741,7 +1737,7 @@ def showEntryPage(recievedData):
     splitGridTemp = tk.Label(
         tempFrameForEntry, bg="#FFFFFF", borderwidth=0, relief="flat"
     )
-    # col1
+    # Column 1
     songTitleTemp = tk.Label(
         splitGridTemp,
         text=songTitleTempValue,
@@ -1758,127 +1754,82 @@ def showEntryPage(recievedData):
     tagsTemp = tk.Label(
         splitGridTemp, bg="#FFFFFF", borderwidth=0, relief="flat", justify="left"
     )
-    # first row
-    popVarTemp = tk.StringVar()
-    popTagTemp = CTkCheckBox(
+    # Row 1
+    popTagTemp = tk.Checkbutton(
         tagsTemp,
         text="pop",
-        font=CTkFont(family="Space Grotesk", size=13),
-        border_width=1,
-        corner_radius=0,
-        checkbox_height=20,
-        checkbox_width=20,
-        variable=popVarTemp,
-        onvalue="pop",
-        offvalue="NULL",
-        hover=False,
-        fg_color="#000000",
+        bg="#FFFFFF",
+        fg="#000000",
+        font=tkFont.Font(family="Space Grotesk", size=10),
+        activebackground="#FFFFFF",
     )
-    popTagTemp.deselect()
     popTagTemp.grid(row=0, column=0, sticky="w")
-    hiphopVarTemp = tk.StringVar()
-    hiphopTagTemp = CTkCheckBox(
+    hiphopTagTemp = tk.Checkbutton(
         tagsTemp,
-        text="hip hop",
-        font=CTkFont(family="Space Grotesk", size=13),
-        border_width=1,
-        corner_radius=0,
-        checkbox_height=20,
-        checkbox_width=20,
-        variable=hiphopVarTemp,
-        onvalue="hiphop",
-        offvalue="NULL",
-        hover=False,
-        fg_color="#000000",
+        text="hiphop",
+        bg="#FFFFFF",
+        fg="#000000",
+        font=tkFont.Font(family="Space Grotesk", size=10),
+        activebackground="#FFFFFF",
     )
     hiphopTagTemp.deselect()
     hiphopTagTemp.grid(row=0, column=1, sticky="w")
-    indieVarTemp = tk.StringVar()
-    indieTagTemp = CTkCheckBox(
+
+    indieTagTemp = tk.Checkbutton(
         tagsTemp,
         text="indie",
-        font=CTkFont(family="Space Grotesk", size=13),
-        border_width=1,
-        corner_radius=0,
-        checkbox_height=20,
-        checkbox_width=20,
-        variable=indieVarTemp,
-        onvalue="indie",
-        offvalue="NULL",
-        hover=False,
-        fg_color="#000000",
+        bg="#FFFFFF",
+        fg="#000000",
+        font=tkFont.Font(family="Space Grotesk", size=10),
+        activebackground="#FFFFFF",
     )
     indieTagTemp.deselect()
     indieTagTemp.grid(row=0, column=2, sticky="w")
-    kpopVarTemp = tk.StringVar()
-    kpopTagTemp = CTkCheckBox(
+
+    kpopTagTemp = tk.Checkbutton(
         tagsTemp,
         text="kpop",
-        font=CTkFont(family="Space Grotesk", size=13),
-        border_width=1,
-        corner_radius=0,
-        checkbox_height=20,
-        checkbox_width=20,
-        variable=kpopVarTemp,
-        onvalue="kpop",
-        offvalue="NULL",
-        hover=False,
-        fg_color="#000000",
+        bg="#FFFFFF",
+        fg="#000000",
+        font=tkFont.Font(family="Space Grotesk", size=10),
+        activebackground="#FFFFFF",
     )
     kpopTagTemp.deselect()
     kpopTagTemp.grid(row=0, column=3, sticky="w")
-    # second row
-    explicitVarTemp = tk.StringVar()
-    explicitTagTemp = CTkCheckBox(
+
+    # Row 2
+    explicitTagTemp = tk.Checkbutton(
         tagsTemp,
         text="explicit",
-        font=CTkFont(family="Space Grotesk", size=13),
-        border_width=1,
-        corner_radius=0,
-        checkbox_height=20,
-        checkbox_width=20,
-        variable=explicitVarTemp,
-        onvalue="explicit",
-        offvalue="NULL",
-        hover=False,
-        fg_color="#000000",
+        bg="#FFFFFF",
+        fg="#000000",
+        font=tkFont.Font(family="Space Grotesk", size=10),
+        activebackground="#FFFFFF",
     )
     explicitTagTemp.deselect()
     explicitTagTemp.grid(row=1, column=0, sticky="w")
-    inhouseVarTemp = tk.StringVar()
-    inhouseTagTemp = CTkCheckBox(
+    inhouseTagTemp = tk.Checkbutton(
         tagsTemp,
         text="inhouse",
-        font=CTkFont(family="Space Grotesk", size=13),
-        border_width=1,
-        corner_radius=0,
-        checkbox_height=20,
-        checkbox_width=20,
-        variable=inhouseVarTemp,
-        onvalue="inhouse",
-        offvalue="NULL",
-        hover=False,
-        fg_color="#000000",
+        bg="#FFFFFF",
+        fg="#000000",
+        font=tkFont.Font(family="Space Grotesk", size=10),
+        activebackground="#FFFFFF",
     )
     inhouseTagTemp.deselect()
     inhouseTagTemp.grid(row=1, column=1, sticky="w")
-    lofiVarTemp = tk.StringVar()
-    lofiTagTemp = CTkCheckBox(
+    lofiTagTemp = tk.Checkbutton(
         tagsTemp,
         text="lofi",
-        font=CTkFont(family="Space Grotesk", size=13),
-        border_width=1,
-        corner_radius=0,
-        checkbox_height=20,
-        checkbox_width=20,
-        variable=lofiVarTemp,
-        onvalue="lofi",
-        offvalue="NULL",
-        hover=False,
-        fg_color="#000000",
+        bg="#FFFFFF",
+        fg="#000000",
+        font=tkFont.Font(family="Space Grotesk", size=10),
+        activebackground="#FFFFFF",
     )
     lofiTagTemp.deselect()
     lofiTagTemp.grid(row=1, column=2, sticky="w")
+
+    # check which tags were selected before and only select them
     if popVarTempValue != "None":
         popTagTemp.select()
     if hiphopVarTempValue != "None":
@@ -1893,14 +1844,14 @@ def showEntryPage(recievedData):
         inhouseTagTemp.select()
     if lofiVarTempValue != "None":
         lofiTagTemp.select()
-    # it will check which tags were selected before and only select them
-    popTagTemp.configure(state=tk.DISABLED)
-    hiphopTagTemp.configure(state=tk.DISABLED)
-    indieTagTemp.configure(state=tk.DISABLED)
-    kpopTagTemp.configure(state=tk.DISABLED)
-    explicitTagTemp.configure(state=tk.DISABLED)
-    inhouseTagTemp.configure(state=tk.DISABLED)
-    lofiTagTemp.configure(state=tk.DISABLED)
+
+    popTagTemp.config(state="disabled")
+    hiphopTagTemp.config(state="disabled")
+    indieTagTemp.config(state="disabled")
+    kpopTagTemp.config(state="disabled")
+    explicitTagTemp.config(state="disabled")
+    inhouseTagTemp.config(state="disabled")
+    lofiTagTemp.config(state="disabled")
 
     def saveFile(initialDirectory):
         if os.path.exists(initialDirectory):
@@ -1909,7 +1860,8 @@ def showEntryPage(recievedData):
             destinationFilePath = os.path.join(destinationDirectory, initialDirectory)
             initialDirectory = os.path.join("databasefiles/", initialDirectory)
             shutil.copy(initialDirectory, destinationFilePath)
-            # if a user requests to save the song file or the image file when on this page, it will copy that file from the databasefiles directory and copy it to
+            # if a user requests to save the song file or the image file when on this page,
+            # it will copy that file from the databasefiles directory and copy it to
             # where the user wants it to be
         else:
             messagebox.showwarning(
@@ -1983,11 +1935,9 @@ def showEntryPage(recievedData):
     downloadSong = Image.open("download song.png")
     resizedDownloadSong = downloadSong.resize((50, 17))
     resizedDownloadSongPhotoImage = ImageTk.PhotoImage(resizedDownloadSong)
-
     imageAndSongGridTemp = tk.Label(
         splitGridTemp, bg="#FFFFFF", borderwidth=0, relief="flat", justify="left"
     )
-
     downloadArtworkButton = tk.Button(
         imageAndSongGridTemp,
         image=resizedDownloadImagePhotoImage,
@@ -2004,7 +1954,6 @@ def showEntryPage(recievedData):
     )
     downloadArtworkButton.grid(row=0, column=0, sticky="w", padx=(0, 105))
     downloadArtworkButton.image = resizedDownloadImagePhotoImage
-
     downloadSongButton = tk.Button(
         imageAndSongGridTemp,
         image=resizedDownloadSongPhotoImage,
@@ -2022,7 +1971,8 @@ def showEntryPage(recievedData):
     downloadSongButton.grid(row=0, column=1, sticky="w", padx=5)
     downloadSongButton.image = resizedDownloadSongPhotoImage
     imageAndSongGridTemp.grid(row=5, column=0, sticky="news", pady=10)
-    # col2
+
+    # Column 2
     releaseDateTemp = tk.Label(
         splitGridTemp,
         text=releaseDateTempValue,
@@ -2075,7 +2025,6 @@ def showEntryPage(recievedData):
         anchor="w",
     )
     prodByTemp.grid(row=4, column=1, sticky="nsew", pady=(15, 0))
-
     splitGridTemp.grid(row=1, column=0, sticky="ew")
 
 
