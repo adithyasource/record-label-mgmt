@@ -41,7 +41,7 @@ window.title("Record Label MGMT")
 # configuring the window for the app
 window.geometry("985x470")
 window.resizable(False, True)
-window.iconbitmap("logo.ico")
+window.iconbitmap("images/logo.ico")
 window.configure(bg="#FFFFFF")
 window.pack_propagate(False)
 
@@ -60,6 +60,12 @@ frameForErrorNoAnalytics = tk.Frame(window, bg="#FFFFFF")
 # <------------------------------------>
 
 #  the following functions are required for small interactions in the program
+
+
+# creates databaseFiles path if it does not exist
+databaseFilesPath = os.path.exists("databaseFiles")
+if not databaseFilesPath:
+    os.makedirs("databaseFiles")
 
 
 # when called and inputted with the name of a frame, it will display that frame on the screen
@@ -111,7 +117,7 @@ else:
 
     frameForError.grid(row=0, column=0, sticky="nsew", padx=75, pady=7)
 
-    iconLogo = tk.PhotoImage(file="icon logo.png")
+    iconLogo = tk.PhotoImage(file="images/icon logo.png")
     topLabel = tk.Label(frameForError, image=iconLogo, anchor="w", bg="#FFFFFF")
     topLabel.grid(
         row=0,
@@ -247,7 +253,7 @@ tableCreateQuery = """
 songLocation = ""
 isSongButtonClicked = False
 isImageButtonClicked = False
-deleteImage = Image.open("delete button.png")
+deleteImage = Image.open("images/delete button.png")
 resizedDeleteImage = deleteImage.resize((17, 17))
 resizedDeleteImagePhotoImage = ImageTk.PhotoImage(resizedDeleteImage)
 
@@ -262,7 +268,7 @@ resizedDeleteImagePhotoImage = ImageTk.PhotoImage(resizedDeleteImage)
 # this is the page which the user is brought to at startup
 
 showPage(frame)
-logo = tk.PhotoImage(file="testflight logo full.png")
+logo = tk.PhotoImage(file="images/testflight logo full.png")
 topLabel = tk.Label(frame, image=logo, anchor="w", bg="#FFFFFF")
 topLabel.grid(
     row=0,
@@ -1929,10 +1935,10 @@ def showEntryPage(recievedData):
     importsGridInsideTemp.grid(row=0, column=1, padx=(10, 0), sticky="e")
     importsGridTemp.grid(row=2, column=0, sticky="w", pady=(20, 0), rowspan=3)
 
-    downloadImage = Image.open("download image.png")
+    downloadImage = Image.open("images/download image.png")
     resizedDownloadImage = downloadImage.resize((60, 17))
     resizedDownloadImagePhotoImage = ImageTk.PhotoImage(resizedDownloadImage)
-    downloadSong = Image.open("download song.png")
+    downloadSong = Image.open("images/download song.png")
     resizedDownloadSong = downloadSong.resize((50, 17))
     resizedDownloadSongPhotoImage = ImageTk.PhotoImage(resizedDownloadSong)
     imageAndSongGridTemp = tk.Label(
