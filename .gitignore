@@ -1,7 +1,0 @@
-.vscode/
-build/
-dist/
-data.db
-analyticsData.csv
-.cache
-config.ini
