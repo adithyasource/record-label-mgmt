@@ -36,7 +36,7 @@ import sys
 
 # creates the window for the app
 window = tk.Tk()
-window.title("Record Label MGMT")
+window.title("Record Label MGMT System")
 
 # configuring the window for the app
 window.geometry("985x470")
@@ -268,7 +268,7 @@ resizedDeleteImagePhotoImage = ImageTk.PhotoImage(resizedDeleteImage)
 # this is the page which the user is brought to at startup
 
 showPage(frame)
-logo = tk.PhotoImage(file="images/testflight logo full.png")
+logo = tk.PhotoImage(file="images/ctrl co logo full.png")
 topLabel = tk.Label(frame, image=logo, anchor="w", bg="#FFFFFF")
 topLabel.grid(
     row=0,
